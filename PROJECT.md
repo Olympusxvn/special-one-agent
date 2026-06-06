@@ -132,6 +132,25 @@ Think Comedy Central Roast meets World Cup group-chat chaos — fun, not hostile
 
 ---
 
+## Walrus Sessions 4 — Submission Status
+
+→ **Full rules + checklist:** [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md)
+
+| Submission item | Status |
+|-----------------|--------|
+| Walrus Memory integration (MemWal SDK) | ✅ Done |
+| Prediction Roast product fit | ✅ Done |
+| Mainnet production deploy URL | ❌ Missing |
+| MemWalAccount explorer link | ❌ Missing |
+| Memory Moment (Day 1 vs ≥4 days) | ❌ TODO |
+| Demo video (<3 min) | ❌ TODO |
+| DeepSurge + Airtable submit | ❌ TODO |
+| Reflection + #Walrus X post | ❌ TODO |
+
+**Deadline:** June 24, 2026 · Track: [Walrus Memory World Cup](https://thewalrussessions.wal.app/memory-world-cup)
+
+---
+
 ## Status
 
 ### Done
@@ -156,6 +175,7 @@ Think Comedy Central Roast meets World Cup group-chat chaos — fun, not hostile
 
 | Resource | Description |
 |----------|-------------|
+| [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md) | Official SS4 rules summary + submission checklist |
 | [GitHub Repository](https://github.com/Olympusxvn/special-one-agent) | Source code and issues |
 | [docs/SPEC.md](./docs/SPEC.md) | Full product spec — source of truth |
 | [docs/superpowers/specs/2026-06-06-mr-toxic-special-one-design.md](./docs/superpowers/specs/2026-06-06-mr-toxic-special-one-design.md) | Implementation design snapshot |

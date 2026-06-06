@@ -5,6 +5,7 @@
 American roast-comedy AI for **Walrus Sessions 4 — World Cup 2026**. Connect your Sui wallet, make bold predictions, and get roasted with receipts pulled from **Walrus Memory (MemWal)**. Wrong calls and bandwagon flip-flops crank the toxicity — fun, sharp, never hostile.
 
 → **Judges & overview:** [PROJECT.md](./PROJECT.md)  
+→ **Hackathon rules & checklist:** [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md)  
 → **Full spec:** [docs/SPEC.md](./docs/SPEC.md)
 
 ## Quick Start

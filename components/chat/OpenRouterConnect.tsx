@@ -49,17 +49,23 @@ export function OpenRouterConnect({
       ? "Using server demo key"
       : "No key — connect to chat";
 
+  const safetyNote =
+    "An toàn đủ cho Walrus Sessions demo — key stays in your browser session only.";
+
   return (
-    <div className="relative">
+    <div className="relative flex items-center gap-2">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground transition hover:border-gold/50"
+        className="shrink-0 rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground transition hover:border-gold/50"
         aria-expanded={open}
         aria-haspopup="dialog"
       >
         {connectedKey ? "🔑 Your key" : hasServerKey ? "🔑 Demo key" : "🔑 Connect"}
       </button>
+      <p className="hidden max-w-[10rem] text-[10px] leading-tight text-foreground/45 sm:block">
+        {safetyNote}
+      </p>
 
       {open && (
         <div
@@ -115,6 +121,10 @@ export function OpenRouterConnect({
           </div>
 
           <p className="mt-3 text-[11px] text-foreground/60">{statusLabel}</p>
+
+          <p className="mt-2 text-[10px] leading-tight text-foreground/45">
+            {safetyNote}
+          </p>
         </div>
       )}
     </div>

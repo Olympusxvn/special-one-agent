@@ -61,6 +61,8 @@ Users pick their roast model with **their** OpenRouter credentials — not only 
 
 Keys live in `sessionStorage` only (`openrouter_api_key`) and are sent per chat request — never logged or stored server-side. If no user key is connected, the app falls back to server `OPENROUTER_API_KEY` when configured (demo mode for judges).
 
+**Walrus Sessions demo:** An toàn đủ cho Walrus Sessions demo — your key stays in the browser session only.
+
 ## Project Structure
 
 ```

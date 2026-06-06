@@ -13,6 +13,7 @@
 - **Xác thực:** kết nối ví Sui + ký `PersonalMessage` trước khi chat; identity gắn với ví, không cần đăng ký.
 - **Kết quả trận:** API-Football (WC 2026) tự sync + người dùng nhập tay ("Argentina beat Brazil 1-0").
 - **LLM:** OpenRouter (chọn model trên UI); intent parsing (team / prediction / result / banter).
+- **BYOK:** người dùng đăng nhập OpenRouter trên browser, dán API key vào panel Connect — key chỉ ở sessionStorage; fallback `OPENROUTER_API_KEY` server cho demo.
 - **UI:** phòng họp báo tối + vàng; ToxicityMeter, PredictionCard, meme stamp trong mỗi roast.
 - **Repo hiện tại:** backend + components ~80% xong; landing page chưa nối ChatContainer; thiếu `.env.example`, README, demo script.
 - **Phạm vi:** hoàn thiện app standalone này — **không** migrate sang monorepo `memwal-agent-memory` trong sprint hackathon.
@@ -32,7 +33,7 @@ Football fans make bold World Cup predictions, flip-flop teams, and cope when wr
 3. **Wallet = identity** — one Sui address → one memory namespace; no email/password auth.
 4. **Fictional persona** — clearly not the real José Mourinho; roast fandom, not individuals.
 5. **MemWal SDK** — `@mysten-incubation/memwal` with `MEMWAL_PRIVATE_KEY`, `MEMWAL_ACCOUNT_ID`, optional `MEMWAL_SERVER_URL`.
-6. **OpenRouter** — `OPENROUTER_API_KEY` required for chat; intent parsing degrades to regex without it.
+6. **OpenRouter** — user BYOK via browser (paste key in Connect panel, `sessionStorage`) **or** server `OPENROUTER_API_KEY` for demo; intent parsing degrades to regex without any key.
 7. **API-Football** — `API_FOOTBALL_KEY` optional; manual result entry always works.
 8. **Serverless-friendly** — Next.js App Router on Vercel; in-memory auth sessions acceptable for demo (24h TTL).
 9. **World Cup 2026** — league id `1`, season `2026` for fixtures (pre-tournament data may be sparse).
@@ -128,9 +129,10 @@ Football fans make bold World Cup predictions, flip-flop teams, and cope when wr
 **Description:** `/api/chat` streams toxic responses via Vercel AI SDK.
 
 **Acceptance criteria:**
-- [ ] POST body: `{ messages, walletAddress, modelId? }`.
+- [ ] POST body: `{ messages, walletAddress, modelId?, openRouterApiKey? }`.
+- [ ] Prefer user `openRouterApiKey` over server `OPENROUTER_API_KEY`; never log or persist user keys.
 - [ ] Returns UI message stream; `onFinish` persists roast to memory.
-- [ ] Returns `503` without `OPENROUTER_API_KEY`; `400` without wallet/message.
+- [ ] Returns `401` without any OpenRouter key; `400` without wallet/message.
 - [ ] **Verify:** `curl` or browser — stream chunks arrive; roast appears in next turn's `RECALLED_MEMORIES`.
 
 ### R8 — Press-room UI
@@ -139,9 +141,10 @@ Football fans make bold World Cup predictions, flip-flop teams, and cope when wr
 
 **Acceptance criteria:**
 - [ ] `app/page.tsx` renders `ChatContainer` (not create-next-app boilerplate).
-- [ ] Components: `PressRoomHeader`, `MourinhoAvatar`, `MessageBubble`, `MemeStamp`, `ModelSelector`, `PredictionCard`, `ToxicityMeter`, `WalletButton`.
+- [ ] Components: `PressRoomHeader`, `MourinhoAvatar`, `MessageBubble`, `MemeStamp`, `ModelSelector`, `OpenRouterConnect`, `PredictionCard`, `ToxicityMeter`, `WalletButton`.
 - [ ] `memWalLive` banner when `MEMWAL_*` keys missing.
-- [ ] Model selector changes `modelId` in chat transport.
+- [ ] Model selector changes `modelId` in chat transport; disabled until user key connected or server demo key exists.
+- [ ] `OpenRouterConnect`: link to openrouter.ai/keys, paste/save/disconnect, masked status.
 - [ ] **Verify:** Full flow in browser — connect → chat → see toxicity meter update after wrong prediction.
 
 ### R9 — Environment and documentation
@@ -278,7 +281,8 @@ toxicityLevel = clamp(1, 10, round(1 + wrongCount*1.5 + flip_flop_count*2 + (hig
 {
   "messages": [{ "id": "…", "role": "user", "parts": [{ "type": "text", "text": "I support Brazil" }] }],
   "walletAddress": "0x…",
-  "modelId": "anthropic/claude-3.5-sonnet"
+  "modelId": "anthropic/claude-3.5-sonnet",
+  "openRouterApiKey": "sk-or-…"
 }
 ```
 
@@ -288,8 +292,7 @@ toxicityLevel = clamp(1, 10, round(1 + wrongCount*1.5 + flip_flop_count*2 + (hig
 | Status | Condition |
 |--------|-----------|
 | `400` | Missing wallet or user message |
-| `401` | Wallet not verified |
-| `503` | `OPENROUTER_API_KEY` missing |
+| `401` | Wallet not verified, or no OpenRouter key (user or server) |
 
 ---
 
@@ -412,7 +415,7 @@ Each step ends with a **verify** check (Karpathy goal-driven).
 
 ## 11. Demo Script (3-minute judge walkthrough)
 
-**Prep:** `OPENROUTER_API_KEY` + `MEMWAL_*` set; Sui wallet on testnet/mainnet; optional `API_FOOTBALL_KEY`.
+**Prep:** User BYOK in Connect panel **or** operator `OPENROUTER_API_KEY` + `MEMWAL_*`; connect a Sui wallet. `API_FOOTBALL_KEY` optional.
 
 | Time | Action | What to show |
 |------|--------|--------------|
@@ -495,7 +498,7 @@ Each step ends with a **verify** check (Karpathy goal-driven).
 ### Environment variables (required for full experience)
 
 ```bash
-# Required
+# Required for server demo mode (optional if users BYOK)
 OPENROUTER_API_KEY=
 
 # MemWal / Walrus (required for persistent memory demo)

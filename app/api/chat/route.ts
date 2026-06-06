@@ -4,7 +4,11 @@ import { NextResponse } from "next/server";
 import { buildSystemPrompt } from "@/lib/ai/build-prompt";
 import { detectIntent, extractRoastTopics } from "@/lib/ai/intent";
 import { DEFAULT_MODEL_ID } from "@/lib/ai/models";
-import { getChatModel, hasOpenRouterKey } from "@/lib/ai/providers";
+import {
+  getChatModel,
+  hasOpenRouterKey,
+  resolveOpenRouterApiKey,
+} from "@/lib/ai/providers";
 import { isWalletVerified } from "@/lib/auth/verify-wallet";
 import { syncPendingPredictions } from "@/lib/football/sync-predictions";
 import {
@@ -50,9 +54,10 @@ export async function POST(req: Request) {
     messages?: UIMessage[];
     walletAddress?: string;
     modelId?: string;
+    openRouterApiKey?: string;
   };
 
-  const { messages = [], walletAddress, modelId } = body;
+  const { messages = [], walletAddress, modelId, openRouterApiKey } = body;
 
   if (!walletAddress?.trim()) {
     return NextResponse.json({ error: "walletAddress required" }, { status: 400 });
@@ -62,10 +67,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Wallet not verified" }, { status: 401 });
   }
 
-  if (!hasOpenRouterKey()) {
+  const apiKey = resolveOpenRouterApiKey(openRouterApiKey);
+
+  if (!hasOpenRouterKey(apiKey)) {
     return NextResponse.json(
-      { error: "OPENROUTER_API_KEY not configured" },
-      { status: 503 },
+      {
+        error:
+          "No OpenRouter API key available. Connect your key in the header panel or ask the operator to set OPENROUTER_API_KEY for demo mode.",
+      },
+      { status: 401 },
     );
   }
 
@@ -77,7 +87,7 @@ export async function POST(req: Request) {
   const syncResult = await syncPendingPredictions(walletAddress);
   let profile = syncResult.profile;
 
-  const intent = await detectIntent(lastUserText);
+  const intent = await detectIntent(lastUserText, apiKey);
 
   if (intent.intent === "set_team" && intent.favorite_team) {
     profile = await setFavoriteTeam(walletAddress, intent.favorite_team, profile);
@@ -117,7 +127,7 @@ export async function POST(req: Request) {
   });
 
   const result = streamText({
-    model: getChatModel(modelId ?? DEFAULT_MODEL_ID),
+    model: getChatModel(modelId ?? DEFAULT_MODEL_ID, apiKey),
     system,
     messages: toModelMessages(messages),
     temperature: 0.85,

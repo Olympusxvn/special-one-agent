@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { DEFAULT_MODEL_ID } from "@/lib/ai/models";
 import { buildAuthMessage } from "@/lib/auth/messages";
+import { getStoredOpenRouterKey } from "@/lib/storage/openrouter-key";
 import type { FanMemory } from "@/lib/memory/types";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 import { emptyFanMemory } from "@/lib/memory/types";
@@ -15,7 +16,13 @@ import { MessageBubble } from "./MessageBubble";
 import { PredictionCard } from "./PredictionCard";
 import { PressRoomHeader } from "./PressRoomHeader";
 
-export function ChatContainer({ memWalLive }: { memWalLive: boolean }) {
+export function ChatContainer({
+  memWalLive,
+  hasServerOpenRouterKey,
+}: {
+  memWalLive: boolean;
+  hasServerOpenRouterKey: boolean;
+}) {
   const account = useCurrentAccount();
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const [verified, setVerified] = useState(false);
@@ -24,6 +31,9 @@ export function ChatContainer({ memWalLive }: { memWalLive: boolean }) {
   const [profile, setProfile] = useState<FanMemory | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [input, setInput] = useState("");
+  const [userOpenRouterKey, setUserOpenRouterKey] = useState<string | null>(null);
+
+  const hasAnyOpenRouterKey = Boolean(userOpenRouterKey || hasServerOpenRouterKey);
 
   const transport = useMemo(
     () =>
@@ -32,6 +42,15 @@ export function ChatContainer({ memWalLive }: { memWalLive: boolean }) {
         body: {
           walletAddress: account?.address,
           modelId,
+        },
+        prepareSendMessagesRequest: ({ body }) => {
+          const storedKey = getStoredOpenRouterKey();
+          return {
+            body: {
+              ...body,
+              ...(storedKey ? { openRouterApiKey: storedKey } : {}),
+            },
+          };
         },
       }),
     [account?.address, modelId],
@@ -116,6 +135,9 @@ export function ChatContainer({ memWalLive }: { memWalLive: boolean }) {
         modelId={modelId}
         onModelChange={setModelId}
         memWalLive={memWalLive}
+        hasServerOpenRouterKey={hasServerOpenRouterKey}
+        modelSelectorDisabled={!hasAnyOpenRouterKey}
+        onOpenRouterKeyChange={setUserOpenRouterKey}
       />
 
       <div className="mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[1fr_280px]">

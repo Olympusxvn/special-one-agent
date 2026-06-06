@@ -100,16 +100,19 @@ function parseIntentRegex(message: string): ParsedIntent {
   return { intent: "banter" };
 }
 
-export async function detectIntent(message: string): Promise<ParsedIntent> {
+export async function detectIntent(
+  message: string,
+  apiKey?: string,
+): Promise<ParsedIntent> {
   const fallback = parseIntentRegex(message);
 
-  if (!hasOpenRouterKey()) {
+  if (!hasOpenRouterKey(apiKey)) {
     return fallback;
   }
 
   try {
     const { object } = await generateObject({
-      model: getChatModel(INTENT_MODEL_ID),
+      model: getChatModel(INTENT_MODEL_ID, apiKey),
       schema: intentSchema,
       prompt: `Classify this football fan message for a World Cup 2026 roast bot.
 Message: "${message}"

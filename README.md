@@ -14,7 +14,8 @@ git clone https://github.com/Olympusxvn/special-one-agent.git
 cd special-one-agent
 
 cp .env.example .env.local
-# Required: OPENROUTER_API_KEY
+# Optional server demo: OPENROUTER_API_KEY (judges / operators)
+# Or connect your own key in the chat header (BYOK — no server key required)
 # Recommended for demo: MEMWAL_PRIVATE_KEY, MEMWAL_ACCOUNT_ID
 
 npm install
@@ -36,7 +37,7 @@ Works with `pnpm` or `npm` interchangeably.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENROUTER_API_KEY` | **Yes** (chat) | OpenRouter API key for streaming roasts |
+| `OPENROUTER_API_KEY` | No* | Server demo key for judges; users can BYOK via browser (see below) |
 | `MEMWAL_PRIVATE_KEY` | No* | Delegate key hex — server only; get from [memory.walrus.xyz](https://memory.walrus.xyz) |
 | `MEMWAL_ACCOUNT_ID` | No* | MemWal account object ID |
 | `MEMWAL_SERVER_URL` | No | Relayer URL (default: `https://relayer.memory.walrus.xyz`) |
@@ -46,6 +47,19 @@ Works with `pnpm` or `npm` interchangeably.
 | `NEXT_PUBLIC_SUI_NETWORK` | No | Sui network for wallet (default: `mainnet`) |
 
 \*MemWal keys required for persistent cross-session memory demo. Without them, the app runs in offline demo mode (in-memory cache only).
+
+\*Chat requires **either** a user-connected OpenRouter key **or** server `OPENROUTER_API_KEY` (demo fallback).
+
+## Bring Your Own Key (OpenRouter)
+
+Users pick their roast model with **their** OpenRouter credentials — not only the operator's server key:
+
+1. Open [openrouter.ai/keys](https://openrouter.ai/keys) in your browser and sign in
+2. Copy your API key from the dashboard
+3. In the press room header, click **Connect** → paste key → **Save**
+4. Choose a model from the dropdown; chat requests use your key for that browser tab
+
+Keys live in `sessionStorage` only (`openrouter_api_key`) and are sent per chat request — never logged or stored server-side. If no user key is connected, the app falls back to server `OPENROUTER_API_KEY` when configured (demo mode for judges).
 
 ## Project Structure
 

@@ -70,32 +70,41 @@ Keys live in `sessionStorage` only (`openrouter_api_key`) and are sent per chat 
 
 ## Project Structure
 
-```
-app/
-  page.tsx              # Landing — wallet gate, news feed, Enter Press Room
-  schedules/page.tsx    # WC 2026 schedules, results, headlines (API-Football / static demo)
-  chat/page.tsx         # Chat UI (ChatContainer)
-  api/
-    chat/route.ts       # Streaming roast API
-    auth/verify/        # Wallet signature verification
-    news/route.ts       # Free RSS headlines (Google News + BBC Sport)
-    matches/
-      fixtures/         # WC 2026 fixtures (API-Football / static demo)
-      sync/             # Resolve pending predictions
-  providers.tsx         # dapp-kit + react-query
-  globals.css           # Charcoal + gold press-room theme
-
-components/
-  chat/                 # PressRoomHeader, ToxicityMeter, PredictionCard, …
-  news/                 # NewsFeed (landing + schedules)
-  wallet/               # WalletButton
-
-lib/
-  ai/                   # System prompt, intent detection, OpenRouter providers
-  memory/               # MemWal client, fan profile, toxicity scoring
-  football/             # API-Football + static demo provider, RSS news, prediction sync
-  auth/                 # Wallet message + verification
-  samples/              # Demo conversation examples
+```text
+special-one-agent/
+├── app/
+│   ├── page.tsx                 Landing, news feed, wallet gate
+│   ├── layout.tsx               Root layout + providers
+│   ├── globals.css              WC 2026 festive theme tokens
+│   ├── providers.tsx            dapp-kit + react-query
+│   ├── chat/page.tsx            Press room (ChatContainer)
+│   ├── schedules/page.tsx       Fixtures, results, RSS headlines
+│   └── api/
+│       ├── chat/route.ts        Streaming roast API
+│       ├── news/route.ts        Free RSS headlines
+│       ├── auth/verify/         Wallet signature verification
+│       └── matches/
+│           ├── fixtures/        WC 2026 fixtures (API-Football or demo JSON)
+│           └── sync/            Resolve pending predictions
+├── components/
+│   ├── chat/                    PressRoomHeader, ToxicityMeter, PredictionCard, ...
+│   ├── news/                    NewsFeed
+│   ├── world-cup/               WorldCupLogo, stripe, watermark
+│   └── wallet/                  WalletButton
+├── lib/
+│   ├── ai/                      System prompt, intent, OpenRouter
+│   ├── memory/                  MemWal client, fan profile, toxicity
+│   ├── memwal/                  Explorer constants for UI
+│   ├── football/                Provider, API-Football, static fixtures, news RSS
+│   ├── auth/                    Wallet message + verification
+│   └── samples/                 Demo conversation examples
+├── data/
+│   └── wc2026-fixtures.json     Zero-key demo fixtures fallback
+├── public/
+│   ├── mourinho-logo.png
+│   └── world-cup-2026-logo.png
+├── docs/MEMWAL_SETUP.md         Operator MemWal mainnet setup
+└── scripts/verify-memwal-env.mjs
 ```
 
 ## How Memory Works

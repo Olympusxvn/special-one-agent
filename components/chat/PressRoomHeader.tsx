@@ -1,7 +1,8 @@
 import { WalletButton } from "@/components/wallet/WalletButton";
-import { ToxicityMeter } from "./ToxicityMeter";
+import { MemWalStatus } from "./MemWalStatus";
 import { ModelSelector } from "./ModelSelector";
 import { OpenRouterConnect } from "./OpenRouterConnect";
+import { ToxicityMeter } from "./ToxicityMeter";
 
 export function PressRoomHeader({
   toxicityLevel,
@@ -30,9 +31,7 @@ export function PressRoomHeader({
           <h1 className="text-xl font-black tracking-tight text-gold sm:text-2xl">
             MR. TOXIC SPECIAL ONE
           </h1>
-          <p className="text-xs text-foreground/50">
-            MemWal {memWalLive ? "🟢 LIVE" : "⚪ offline demo"}
-          </p>
+          <MemWalStatus live={memWalLive} />
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <ToxicityMeter level={toxicityLevel} />

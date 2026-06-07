@@ -169,7 +169,21 @@ Honest mapping: requirement → status.
 
 Ordered for hackathon submission success:
 
-### P0 — Blockers (must have before submit)
+### P0 — MemWal mainnet (operator)
+
+→ **Step-by-step:** [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md)
+
+| Step | Action |
+|------|--------|
+| 1 | [memory.walrus.xyz/dashboard](https://memory.walrus.xyz/dashboard) → **Connect wallet** (Sui mainnet) |
+| 2 | Create **MemWalAccount** (first time) |
+| 3 | Create **delegate key** (not owner key) → `MEMWAL_PRIVATE_KEY` |
+| 4 | Copy account object ID → `MEMWAL_ACCOUNT_ID` + `NEXT_PUBLIC_MEMWAL_ACCOUNT_ID` |
+| 5 | `npm run memwal:verify` → deploy Vercel with same env |
+
+Users in the app only connect wallet; memories use namespace `special-one-{address}` on your account.
+
+### P0 — Submission blockers
 
 1. **Create MemWalAccount on mainnet** — dashboard at [memory.walrus.xyz](https://memory.walrus.xyz); set `MEMWAL_PRIVATE_KEY`, `MEMWAL_ACCOUNT_ID` on production host.
 2. **Deploy to production** (Vercel or similar) with mainnet env — document URL in README + PROJECT.md.

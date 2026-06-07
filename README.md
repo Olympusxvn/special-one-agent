@@ -25,6 +25,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) → connect Sui wallet → **Enter Press Room** (`/chat`).
 
+**Production:** [special-one-agent.vercel.app](https://special-one-agent.vercel.app) — MemWal mainnet live; **OpenRouter BYOK required** (paste your key in the press room header; no server LLM key on production).
+
 **Production build:**
 
 ```bash
@@ -39,15 +41,16 @@ Works with `pnpm` or `npm` interchangeably.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENROUTER_API_KEY` | No* | Server demo key for judges; users can BYOK via browser (see below) |
-| `MEMWAL_PRIVATE_KEY` | No* | Delegate key hex — server only; get from [memory.walrus.xyz](https://memory.walrus.xyz) |
+| `MEMWAL_PRIVATE_KEY` | No* | Delegate key hex — server only; get from [memory.walrus.xyz/dashboard](https://memory.walrus.xyz/dashboard) |
 | `MEMWAL_ACCOUNT_ID` | No* | MemWal account object ID |
+| `NEXT_PUBLIC_MEMWAL_ACCOUNT_ID` | No | Same as above — shows explorer link in UI |
 | `MEMWAL_SERVER_URL` | No | Relayer URL (default: `https://relayer.memory.walrus.xyz`) |
 | `API_FOOTBALL_KEY` | No | Auto-sync WC 2026 fixtures; manual results work without it |
 | `AUTH_MESSAGE_DOMAIN` | No | Wallet sign-in message domain (default: `mr-toxic-special-one`) |
 | `NEXT_PUBLIC_AUTH_MESSAGE_DOMAIN` | No | Client-side auth domain (must match server) |
 | `NEXT_PUBLIC_SUI_NETWORK` | No | Sui network for wallet (default: `mainnet`) |
 
-\*MemWal keys required for persistent cross-session memory demo. Without them, the app runs in offline demo mode (in-memory cache only).
+\*MemWal keys required for persistent cross-session memory demo. Setup: [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md). Verify: `npm run memwal:verify`.
 
 \*Chat requires **either** a user-connected OpenRouter key **or** server `OPENROUTER_API_KEY` (demo fallback).
 

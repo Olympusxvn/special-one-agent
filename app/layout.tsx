@@ -19,6 +19,10 @@ export const metadata: Metadata = {
   title: "Mr. Toxic Special One | Walrus World Cup Agent",
   description:
     "José Mourinho toxic press-conference AI that roasts football fans with Walrus Memory.",
+  icons: {
+    icon: "/mourinho-logo.png",
+    apple: "/mourinho-logo.png",
+  },
 };
 
 export default function RootLayout({

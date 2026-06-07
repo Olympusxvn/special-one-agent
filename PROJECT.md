@@ -140,8 +140,8 @@ Think Comedy Central Roast meets World Cup group-chat chaos — fun, not hostile
 |-----------------|--------|
 | Walrus Memory integration (MemWal SDK) | ✅ Done |
 | Prediction Roast product fit | ✅ Done |
-| Mainnet production deploy URL | ❌ Missing |
-| MemWalAccount explorer link | ❌ Missing |
+| Mainnet production deploy URL | ✅ [special-one-agent.vercel.app](https://special-one-agent.vercel.app) |
+| MemWalAccount explorer link | ✅ [suiscan](https://suiscan.xyz/mainnet/object/0x73b07979a6712f54283c02ddf70e2bdfb3ec729627c9ef0e0d8a214015066a99) |
 | Memory Moment (Day 1 vs ≥4 days) | ❌ TODO |
 | Demo video (<3 min) | ❌ TODO |
 | DeepSurge + Airtable submit | ❌ TODO |
@@ -175,6 +175,7 @@ Think Comedy Central Roast meets World Cup group-chat chaos — fun, not hostile
 
 | Resource | Description |
 |----------|-------------|
+| [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md) | Mainnet MemWalAccount + delegate key setup |
 | [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md) | Official SS4 rules summary + submission checklist |
 | [GitHub Repository](https://github.com/Olympusxvn/special-one-agent) | Source code and issues |
 | [docs/SPEC.md](./docs/SPEC.md) | Full product spec — source of truth |

@@ -1,0 +1,102 @@
+[
+  {
+    "id": 900001,
+    "date": "2026-06-11T19:00:00+00:00",
+    "status": "FT",
+    "homeTeam": "Mexico",
+    "awayTeam": "South Africa",
+    "homeGoals": 2,
+    "awayGoals": 1,
+    "scoreline": "2-1"
+  },
+  {
+    "id": 900002,
+    "date": "2026-06-12T01:00:00+00:00",
+    "status": "FT",
+    "homeTeam": "Canada",
+    "awayTeam": "Qatar",
+    "homeGoals": 1,
+    "awayGoals": 1,
+    "scoreline": "1-1"
+  },
+  {
+    "id": 900003,
+    "date": "2026-06-15T19:00:00+00:00",
+    "status": "NS",
+    "homeTeam": "Brazil",
+    "awayTeam": "Morocco",
+    "homeGoals": null,
+    "awayGoals": null,
+    "scoreline": null
+  },
+  {
+    "id": 900004,
+    "date": "2026-06-16T01:00:00+00:00",
+    "status": "NS",
+    "homeTeam": "Argentina",
+    "awayTeam": "Japan",
+    "homeGoals": null,
+    "awayGoals": null,
+    "scoreline": null
+  },
+  {
+    "id": 900005,
+    "date": "2026-06-18T19:00:00+00:00",
+    "status": "NS",
+    "homeTeam": "France",
+    "awayTeam": "Senegal",
+    "homeGoals": null,
+    "awayGoals": null,
+    "scoreline": null
+  },
+  {
+    "id": 900006,
+    "date": "2026-06-19T01:00:00+00:00",
+    "status": "NS",
+    "homeTeam": "England",
+    "awayTeam": "USA",
+    "homeGoals": null,
+    "awayGoals": null,
+    "scoreline": null
+  },
+  {
+    "id": 900007,
+    "date": "2026-06-22T19:00:00+00:00",
+    "status": "NS",
+    "homeTeam": "Germany",
+    "awayTeam": "Colombia",
+    "homeGoals": null,
+    "awayGoals": null,
+    "scoreline": null
+  },
+  {
+    "id": 900008,
+    "date": "2026-06-23T01:00:00+00:00",
+    "status": "NS",
+    "homeTeam": "Spain",
+    "awayTeam": "Netherlands",
+    "homeGoals": null,
+    "awayGoals": null,
+    "scoreline": null
+  },
+  {
+    "id": 900009,
+    "date": "2026-07-05T19:00:00+00:00",
+    "status": "NS",
+    "homeTeam": "TBD",
+    "awayTeam": "TBD",
+    "homeGoals": null,
+    "awayGoals": null,
+    "scoreline": null
+  },
+  {
+    "id": 900010,
+    "date": "2026-07-19T23:00:00+00:00",
+    "status": "NS",
+    "homeTeam": "TBD",
+    "awayTeam": "TBD",
+    "homeGoals": null,
+    "awayGoals": null,
+    "scoreline": null
+  }
+]

@@ -112,19 +112,28 @@ export default async function SchedulesPage() {
       </header>
 
       <main className="relative mx-auto max-w-3xl space-y-10 px-4 py-8">
-        {source === "unavailable" && (
+        {source === "static-demo" && (
           <p className="rounded-xl border border-dashed border-gold/30 bg-gold/5 p-6 text-sm text-foreground/60">
-            No football data provider configured. Set{" "}
-            <code className="text-gold">SPORTMONKS_API_TOKEN</code> (preferred) or{" "}
-            <code className="text-gold">API_FOOTBALL_KEY</code> on the server, then
-            refresh. Manual match results in chat still work without either key.
+            Showing curated demo fixtures (no live API key). For live schedules and
+            results, set{" "}
+            <code className="text-gold">API_FOOTBALL_KEY</code> on the server — free
+            tier at{" "}
+            <a
+              href="https://www.api-football.com/"
+              className="text-pitch underline hover:text-gold"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              api-football.com
+            </a>{" "}
+            (~100 requests/day). Manual match results in chat still work without a
+            key.
           </p>
         )}
 
-        {source !== "unavailable" && (
+        {source === "api-football" && (
           <p className="text-xs text-foreground/45">
-            Data via {source === "sportmonks" ? "SportMonks" : "API-Football"} ·
-            season 2026
+            Data via API-Football (free tier) · FIFA World Cup 2026
           </p>
         )}
 

@@ -12,7 +12,7 @@ export async function GET() {
   return NextResponse.json({
     fixtures,
     source,
-    seasonId: source === "sportmonks" ? 26618 : undefined,
-    leagueId: source === "sportmonks" ? 732 : undefined,
+    leagueId: source === "api-football" ? 1 : undefined,
+    season: source === "api-football" ? 2026 : undefined,
   });
 }

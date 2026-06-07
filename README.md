@@ -160,6 +160,16 @@ More samples in `lib/samples/conversations.ts`.
 - **Standalone Next.js app** — deployable demo; `build` passes; API routes + `/chat` wired
 - **Graceful degradation** — works without API-Football (manual results); regex intent fallback without OpenRouter extras
 
+## MemWal Feedback (Walrus Sessions 4)
+
+Feedback filed on [MystenLabs/MemWal](https://github.com/MystenLabs/MemWal) while building this app (feedback prize pool):
+
+| Issue | Type | Summary |
+|-------|------|---------|
+| [#246](https://github.com/MystenLabs/MemWal/issues/246) | Docs | Cookbook for multi-tenant server apps — one MemWalAccount, delegate key, namespace per user wallet |
+| [#247](https://github.com/MystenLabs/MemWal/issues/247) | Feature | Upsert / key-based recall for structured agent state (JSON profile pattern) |
+| [#248](https://github.com/MystenLabs/MemWal/issues/248) | Feature | `healthCheck()` to verify relayer + delegate permissions at deploy time |
+
 ## API Routes
 
 | Route | Method | Purpose |

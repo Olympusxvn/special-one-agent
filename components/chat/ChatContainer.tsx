@@ -15,6 +15,7 @@ import { emptyFanMemory } from "@/lib/memory/types";
 import { MessageBubble } from "./MessageBubble";
 import { PredictionCard } from "./PredictionCard";
 import { PressRoomHeader } from "./PressRoomHeader";
+import { WorldCupWatermark } from "@/components/world-cup/WorldCupWatermark";
 
 export function ChatContainer({
   memWalLive,
@@ -119,7 +120,14 @@ export function ChatContainer({
   if (!account) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-        <h2 className="text-2xl font-black text-gold">Connect Your Wallet</h2>
+        <div className="pitch-accent-bar fixed inset-x-0 top-0" />
+        <div className="relative">
+          <div className="absolute -inset-6 rounded-full bg-gold/10 blur-2xl" />
+          <span className="relative text-5xl">🔐</span>
+        </div>
+        <h2 className="font-display text-3xl tracking-wide">
+          <span className="gradient-text-gold">Connect Your Wallet</span>
+        </h2>
         <p className="max-w-md text-sm text-foreground/70">
           The Special One only roasts verified fans. Connect your Sui wallet to
           unlock Walrus Memory and enter the press room.
@@ -129,7 +137,8 @@ export function ChatContainer({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="relative flex min-h-screen flex-col overflow-hidden">
+      <WorldCupWatermark />
       <PressRoomHeader
         toxicityLevel={toxicityLevel}
         modelId={modelId}
@@ -140,12 +149,12 @@ export function ChatContainer({
         onOpenRouterKeyChange={setUserOpenRouterKey}
       />
 
-      <div className="mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[1fr_280px]">
-        <div className="flex flex-col rounded-xl border border-press-border bg-press-card">
+      <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[1fr_280px]">
+        <div className="festive-card flex flex-col rounded-xl">
           <div className="flex-1 space-y-4 overflow-y-auto p-4">
             {messages.length === 0 && (
-              <div className="rounded-xl border border-dashed border-gold/30 p-6 text-center text-sm text-foreground/60">
-                <p className="mb-2 font-semibold text-gold">
+              <div className="rounded-xl border border-dashed border-gold/30 bg-gold/5 p-6 text-center text-sm text-foreground/60">
+                <p className="mb-2 font-display text-lg tracking-wide text-gold">
                   Welcome to the press conference, little supporter.
                 </p>
                 <p>
@@ -170,7 +179,7 @@ export function ChatContainer({
               );
             })}
             {isLoading && (
-              <p className="animate-pulse text-sm text-gold/70">
+              <p className="animate-pulse text-sm text-pitch">
                 The Special One is preparing your roast… 🔥
               </p>
             )}
@@ -181,9 +190,9 @@ export function ChatContainer({
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="border-t border-press-border p-4">
+          <form onSubmit={handleSubmit} className="border-t border-gold/10 p-4">
             {!verified && (
-              <p className="mb-2 text-xs text-gold">
+              <p className="mb-2 text-xs text-pitch">
                 {verifying ? "Signing wallet…" : "Verifying wallet signature…"}
               </p>
             )}
@@ -197,12 +206,12 @@ export function ChatContainer({
                     : "Waiting for wallet verification…"
                 }
                 disabled={!verified || isLoading}
-                className="flex-1 rounded-xl border border-press-border bg-press px-4 py-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-gold focus:outline-none disabled:opacity-50"
+                className="flex-1 rounded-xl border border-press-border bg-midnight/60 px-4 py-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-pitch focus:outline-none focus:ring-1 focus:ring-pitch/30 disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={!verified || isLoading || !input.trim()}
-                className="rounded-xl bg-gold px-5 py-3 text-sm font-bold text-press transition hover:bg-gold/90 disabled:opacity-50"
+                className="btn-festive rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-50"
               >
                 Send
               </button>

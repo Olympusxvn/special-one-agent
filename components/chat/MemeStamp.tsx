@@ -7,7 +7,7 @@ export function extractMemeStamps(text: string): string[] {
 
 export function MemeStamp({ label }: { label: string }) {
   return (
-    <span className="inline-flex items-center rounded-full border border-roast/40 bg-roast/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-roast">
+    <span className="inline-flex items-center rounded-full border border-roast/40 bg-roast/10 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-roast shadow-[0_0_8px_rgba(255,71,87,0.15)]">
       {label}
     </span>
   );

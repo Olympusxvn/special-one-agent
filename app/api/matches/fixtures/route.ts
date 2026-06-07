@@ -1,11 +1,18 @@
 import { NextResponse } from "next/server";
 
-import { getWorldCupFixtures } from "@/lib/football/api-football";
+import {
+  getFootballDataSource,
+  getWorldCupFixtures,
+} from "@/lib/football/provider";
 
 export async function GET() {
   const fixtures = await getWorldCupFixtures();
+  const source = getFootballDataSource();
+
   return NextResponse.json({
     fixtures,
-    source: process.env.API_FOOTBALL_KEY ? "api-football" : "unavailable",
+    source,
+    seasonId: source === "sportmonks" ? 26618 : undefined,
+    leagueId: source === "sportmonks" ? 732 : undefined,
   });
 }

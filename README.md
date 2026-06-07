@@ -23,7 +23,8 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) → connect Sui wallet → **Enter Press Room** (`/chat`).
+Open [http://localhost:3000](http://localhost:3000) → connect Sui wallet → **Enter Press Room** (`/chat`).  
+**Schedules & Results:** [`/schedules`](http://localhost:3000/schedules) — fixtures, results, and free RSS headlines (SportMonks or API-Football when configured).
 
 **Production:** [special-one-agent.vercel.app](https://special-one-agent.vercel.app) — MemWal mainnet live; **OpenRouter BYOK required** (paste your key in the press room header; no server LLM key on production).
 
@@ -45,7 +46,8 @@ Works with `pnpm` or `npm` interchangeably.
 | `MEMWAL_ACCOUNT_ID` | No* | MemWal account object ID |
 | `NEXT_PUBLIC_MEMWAL_ACCOUNT_ID` | No | Same as above — shows explorer link in UI |
 | `MEMWAL_SERVER_URL` | No | Relayer URL (default: `https://relayer.memory.walrus.xyz`) |
-| `API_FOOTBALL_KEY` | No | Auto-sync WC 2026 fixtures; manual results work without it |
+| `SPORTMONKS_API_TOKEN` | No | **Preferred** — [SportMonks World Cup API](https://www.sportmonks.com/football-api/world-cup-api/) (season 26618) |
+| `API_FOOTBALL_KEY` | No | Fallback fixture sync if SportMonks token unset; manual results always work |
 | `AUTH_MESSAGE_DOMAIN` | No | Wallet sign-in message domain (default: `mr-toxic-special-one`) |
 | `NEXT_PUBLIC_AUTH_MESSAGE_DOMAIN` | No | Client-side auth domain (must match server) |
 | `NEXT_PUBLIC_SUI_NETWORK` | No | Sui network for wallet (default: `mainnet`) |
@@ -71,25 +73,28 @@ Keys live in `sessionStorage` only (`openrouter_api_key`) and are sent per chat 
 
 ```
 app/
-  page.tsx              # Landing — wallet gate, Enter Press Room
+  page.tsx              # Landing — wallet gate, news feed, Enter Press Room
+  schedules/page.tsx    # WC 2026 schedules, results, headlines (SportMonks / API-Football)
   chat/page.tsx         # Chat UI (ChatContainer)
   api/
     chat/route.ts       # Streaming roast API
     auth/verify/        # Wallet signature verification
+    news/route.ts       # Free RSS headlines (Google News + BBC Sport)
     matches/
-      fixtures/         # WC 2026 fixtures (API-Football)
+      fixtures/         # WC 2026 fixtures (SportMonks / API-Football)
       sync/             # Resolve pending predictions
   providers.tsx         # dapp-kit + react-query
   globals.css           # Charcoal + gold press-room theme
 
 components/
   chat/                 # PressRoomHeader, ToxicityMeter, PredictionCard, …
+  news/                 # NewsFeed (landing + schedules)
   wallet/               # WalletButton
 
 lib/
   ai/                   # System prompt, intent detection, OpenRouter providers
   memory/               # MemWal client, fan profile, toxicity scoring
-  football/             # API-Football + prediction sync
+  football/             # SportMonks / API-Football provider, RSS news, prediction sync
   auth/                 # Wallet message + verification
   samples/              # Demo conversation examples
 ```

@@ -8,7 +8,7 @@ import {
   formatFixtureResult,
   getFixtureById,
   isFixtureFinished,
-} from "./api-football";
+} from "./provider";
 
 export interface SyncResult {
   profile: FanMemory;

@@ -3,30 +3,263 @@
 @tailwind utilities;
 
 :root {
-  --background: #1a1a1a;
-  --foreground: #f0f0f0;
-  --press: #121212;
-  --press-card: #222222;
-  --press-border: #333333;
-  --gold: #c9a227;
-  --roast: #e63946;
+  --background: #0a1628;
+  --foreground: #f0f4f8;
+  --press: #0d1b2e;
+  --press-card: #122038;
+  --press-border: #1e3a5f;
+  --midnight: #060e1a;
+  --pitch: #00c853;
+  --pitch-dark: #008f3a;
+  --pitch-muted: rgba(0, 200, 83, 0.12);
+  --gold: #f5c842;
+  --gold-bright: #ffe082;
+  --gold-muted: rgba(245, 200, 66, 0.15);
+  --roast: #ff4757;
+  --accent-red: #e63946;
+  --stadium-glow: rgba(0, 200, 83, 0.18);
+  --trophy-glow: rgba(245, 200, 66, 0.25);
+  /* FIFA World Cup 2026 official host-nation palette */
+  --wc-navy: #1b365d;
+  --wc-red: #c8102e;
+  --wc-green: #006747;
+  --wc-white: #ffffff;
+  --wc-black: #0a0a0a;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   color: var(--foreground);
-  background: var(--background);
+  background: var(--midnight);
   font-family: var(--font-inter), system-ui, sans-serif;
   min-height: 100vh;
   background-image:
-    radial-gradient(ellipse at top, rgba(201, 162, 39, 0.08), transparent 50%),
-    linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+    /* confetti dots */
+    radial-gradient(circle at 8% 12%, rgba(245, 200, 66, 0.35) 1px, transparent 1px),
+    radial-gradient(circle at 92% 8%, rgba(255, 71, 87, 0.3) 1px, transparent 1px),
+    radial-gradient(circle at 15% 88%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
+    radial-gradient(circle at 85% 75%, rgba(0, 200, 83, 0.35) 1px, transparent 1px),
+    radial-gradient(circle at 50% 50%, rgba(245, 200, 66, 0.15) 1px, transparent 1px),
+    radial-gradient(circle at 72% 22%, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
+    /* stadium floodlights */
+    radial-gradient(ellipse 80% 50% at 50% -10%, var(--stadium-glow), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 10% 100%, rgba(0, 200, 83, 0.08), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(245, 200, 66, 0.06), transparent 50%),
+    /* pitch lines subtle */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 79px,
+      rgba(0, 200, 83, 0.04) 79px,
+      rgba(0, 200, 83, 0.04) 80px
+    ),
+    linear-gradient(180deg, var(--background) 0%, var(--midnight) 100%);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 100%,
+    100% 80px,
+    100% 100%;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+
   .shadow-glow {
-    box-shadow: 0 0 20px rgba(201, 162, 39, 0.15);
+    box-shadow:
+      0 0 20px var(--trophy-glow),
+      0 0 40px rgba(0, 200, 83, 0.08);
+  }
+
+  .shadow-glow-pitch {
+    box-shadow:
+      0 0 16px rgba(0, 200, 83, 0.25),
+      0 0 32px rgba(0, 200, 83, 0.1);
+  }
+
+  .shadow-glow-gold {
+    box-shadow:
+      0 0 20px var(--trophy-glow),
+      0 4px 24px rgba(245, 200, 66, 0.15);
+  }
+
+  .gradient-text-gold {
+    background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold) 50%, #d4a017 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .gradient-text-festive {
+    background: linear-gradient(
+      135deg,
+      var(--gold-bright) 0%,
+      var(--gold) 35%,
+      var(--pitch) 70%,
+      var(--gold-bright) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer-text 4s ease-in-out infinite;
+  }
+
+  .festive-border {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--press-card), var(--press-card)) padding-box,
+      linear-gradient(135deg, var(--gold), var(--pitch), var(--gold-bright)) border-box;
+  }
+
+  .festive-card {
+    background: linear-gradient(
+      145deg,
+      rgba(18, 32, 56, 0.95) 0%,
+      rgba(13, 27, 46, 0.98) 100%
+    );
+    border: 1px solid rgba(245, 200, 66, 0.2);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .btn-festive {
+    background: linear-gradient(135deg, var(--gold) 0%, #e8b020 50%, var(--gold-bright) 100%);
+    background-size: 200% auto;
+    color: var(--midnight);
+    transition: background-position 0.4s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-festive:hover {
+    background-position: right center;
+    box-shadow: 0 0 24px var(--trophy-glow);
+    transform: translateY(-1px);
+  }
+
+  .btn-outline-festive {
+    border: 1px solid rgba(245, 200, 66, 0.45);
+    background: rgba(245, 200, 66, 0.06);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-outline-festive:hover {
+    background: rgba(245, 200, 66, 0.12);
+    border-color: var(--gold);
+    box-shadow: 0 0 16px rgba(245, 200, 66, 0.15);
+  }
+
+  .badge-festive {
+    border: 1px solid rgba(245, 200, 66, 0.25);
+    background: rgba(0, 200, 83, 0.06);
+    backdrop-filter: blur(4px);
+  }
+
+  .stadium-header {
+    background: linear-gradient(
+      180deg,
+      rgba(13, 27, 46, 0.97) 0%,
+      rgba(10, 22, 40, 0.92) 100%
+    );
+    border-bottom: 1px solid rgba(245, 200, 66, 0.15);
+    box-shadow:
+      0 4px 24px rgba(0, 0, 0, 0.25),
+      0 1px 0 rgba(0, 200, 83, 0.1);
+  }
+
+  .avatar-ring {
+    box-shadow:
+      0 0 0 3px var(--gold),
+      0 0 20px var(--trophy-glow),
+      0 0 40px rgba(0, 200, 83, 0.15);
+    animation: pulse-ring 3s ease-in-out infinite;
+  }
+
+  .pitch-accent-bar {
+    height: 3px;
+    background: linear-gradient(90deg, var(--pitch-dark), var(--pitch), var(--gold), var(--pitch));
+    background-size: 200% 100%;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  .wc-host-stripe {
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      var(--wc-navy) 0%,
+      var(--wc-navy) 33%,
+      var(--wc-red) 50%,
+      var(--wc-green) 66%,
+      var(--wc-green) 100%
+    );
+  }
+
+  .logo-badge {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(27, 54, 93, 0.25);
+    padding: 0.375rem 0.5rem;
+    box-shadow:
+      0 4px 16px rgba(0, 0, 0, 0.25),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+}
+
+@keyframes shimmer-text {
+  0%,
+  100% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+}
+
+@keyframes pulse-ring {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--gold),
+      0 0 20px var(--trophy-glow),
+      0 0 40px rgba(0, 200, 83, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px var(--gold-bright),
+      0 0 28px var(--trophy-glow),
+      0 0 50px rgba(0, 200, 83, 0.25);
+  }
+}
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes confetti-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(-6px) rotate(3deg);
+    opacity: 1;
   }
 }

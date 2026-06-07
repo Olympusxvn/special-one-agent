@@ -18,8 +18,8 @@ export function MessageBubble({
       <div
         className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           isAssistant
-            ? "border border-gold/30 bg-press-card text-foreground shadow-glow"
-            : "bg-press-border/60 text-foreground"
+            ? "festive-border shadow-glow-gold text-foreground"
+            : "border border-pitch/25 bg-pitch/10 text-foreground"
         }`}
       >
         <p className="whitespace-pre-wrap">{content}</p>

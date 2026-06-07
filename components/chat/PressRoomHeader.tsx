@@ -1,4 +1,6 @@
 import { WalletButton } from "@/components/wallet/WalletButton";
+import { WorldCupLogo } from "@/components/world-cup/WorldCupLogo";
+import { WorldCupStripe } from "@/components/world-cup/WorldCupStripe";
 import { MemWalStatus } from "./MemWalStatus";
 import { ModelSelector } from "./ModelSelector";
 import { OpenRouterConnect } from "./OpenRouterConnect";
@@ -22,31 +24,40 @@ export function PressRoomHeader({
   onOpenRouterKeyChange: (key: string | null) => void;
 }) {
   return (
-    <header className="border-b border-press-border bg-press/90 px-4 py-3 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-gold/70">
-            Walrus Sessions 4 · World Cup
-          </p>
-          <h1 className="text-xl font-black tracking-tight text-gold sm:text-2xl">
-            MR. TOXIC SPECIAL ONE
-          </h1>
-          <MemWalStatus live={memWalLive} />
+    <>
+      <div className="pitch-accent-bar" />
+      <WorldCupStripe />
+      <header className="stadium-header px-4 py-3 backdrop-blur-md">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="logo-badge hidden shrink-0 sm:block">
+              <WorldCupLogo size="sm" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-pitch/80">
+                Walrus Sessions 4 · World Cup 2026
+              </p>
+              <h1 className="font-display text-xl tracking-wide sm:text-2xl">
+                <span className="gradient-text-gold">MR. TOXIC SPECIAL ONE</span>
+              </h1>
+              <MemWalStatus live={memWalLive} />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <ToxicityMeter level={toxicityLevel} />
+            <OpenRouterConnect
+              hasServerKey={hasServerOpenRouterKey}
+              onKeyChange={onOpenRouterKeyChange}
+            />
+            <ModelSelector
+              value={modelId}
+              onChange={onModelChange}
+              disabled={modelSelectorDisabled}
+            />
+            <WalletButton />
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <ToxicityMeter level={toxicityLevel} />
-          <OpenRouterConnect
-            hasServerKey={hasServerOpenRouterKey}
-            onKeyChange={onOpenRouterKeyChange}
-          />
-          <ModelSelector
-            value={modelId}
-            onChange={onModelChange}
-            disabled={modelSelectorDisabled}
-          />
-          <WalletButton />
-        </div>
-      </div>
-    </header>
+      </header>
+    </>
   );
 }

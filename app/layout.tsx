@@ -32,7 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${bebas.variable} font-sans antialiased`}>
+      <body
+        className={`${inter.variable} ${bebas.variable} font-sans antialiased selection:bg-gold/30 selection:text-foreground`}
+      >
         <Providers>{children}</Providers>
       </body>
     </html>

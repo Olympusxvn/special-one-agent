@@ -5,7 +5,7 @@ const LOGO_SRC = "/mourinho-logo.png";
 export function MourinhoAvatar({ size = 48 }: { size?: number }) {
   return (
     <div
-      className="relative shrink-0 overflow-hidden rounded-lg border-2 border-gold bg-white shadow-glow"
+      className="avatar-ring relative shrink-0 overflow-hidden rounded-xl bg-white"
       style={{ width: size, height: size }}
     >
       <Image

@@ -1,15 +1,12 @@
-const BASE_URL = "https://v3.football.api-sports.io";
+import type { FixtureSummary } from "./types";
+import {
+  formatFixtureResult,
+  isFixtureFinished,
+} from "./types";
 
-export interface FixtureSummary {
-  id: number;
-  date: string;
-  status: string;
-  homeTeam: string;
-  awayTeam: string;
-  homeGoals: number | null;
-  awayGoals: number | null;
-  scoreline: string | null;
-}
+export { formatFixtureResult, isFixtureFinished };
+
+const BASE_URL = "https://v3.football.api-sports.io";
 
 interface CacheEntry<T> {
   data: T;
@@ -103,13 +100,4 @@ export async function getFixtureById(
     expiresAt: Date.now() + 5 * 60 * 1000,
   });
   return fixture;
-}
-
-export function formatFixtureResult(fixture: FixtureSummary): string {
-  if (!fixture.scoreline) return `${fixture.homeTeam} vs ${fixture.awayTeam} — pending`;
-  return `${fixture.homeTeam} ${fixture.scoreline} ${fixture.awayTeam}`;
-}
-
-export function isFixtureFinished(fixture: FixtureSummary): boolean {
-  return ["FT", "AET", "PEN"].includes(fixture.status);
 }

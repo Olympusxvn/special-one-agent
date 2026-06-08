@@ -5,7 +5,6 @@ import { WorldCupLogo } from "@/components/world-cup/WorldCupLogo";
 import { WorldCupStripe } from "@/components/world-cup/WorldCupStripe";
 import { MemWalStatus } from "./MemWalStatus";
 import { ModelSelector } from "./ModelSelector";
-import { LlmProviderConnect } from "./LlmProviderConnect";
 import { ToxicityMeter } from "./ToxicityMeter";
 
 export function PressRoomHeader({
@@ -15,7 +14,7 @@ export function PressRoomHeader({
   memWalLive,
   hasServerLlmKey,
   connectedProviders,
-  onConnectedProvidersChange,
+  onOpenSettings,
 }: {
   toxicityLevel: number;
   modelId: string;
@@ -23,13 +22,15 @@ export function PressRoomHeader({
   memWalLive: boolean;
   hasServerLlmKey: boolean;
   connectedProviders: LlmProvider[];
-  onConnectedProvidersChange: (providers: LlmProvider[]) => void;
+  onOpenSettings: () => void;
 }) {
+  const llmReady = hasServerLlmKey || connectedProviders.length > 0;
+
   return (
     <>
       <div className="pitch-accent-bar" />
       <WorldCupStripe />
-      <header className="stadium-header px-4 py-3 backdrop-blur-md">
+      <header className="relative z-30 stadium-header px-4 py-3 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="logo-badge hidden shrink-0 sm:block">
@@ -45,12 +46,19 @@ export function PressRoomHeader({
               <MemWalStatus live={memWalLive} />
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <ToxicityMeter level={toxicityLevel} />
-            <LlmProviderConnect
-              hasServerKey={hasServerLlmKey}
-              onKeysChange={onConnectedProvidersChange}
-            />
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="shrink-0 rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground transition hover:border-gold/50"
+              aria-label="Open settings"
+            >
+              ⚙️ Settings
+              {!llmReady ? (
+                <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-roast" />
+              ) : null}
+            </button>
             <ModelSelector
               value={modelId}
               onChange={onModelChange}

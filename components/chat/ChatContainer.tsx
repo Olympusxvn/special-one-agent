@@ -10,6 +10,7 @@ import {
   CHAT_MODELS,
   DEFAULT_MODEL_ID,
   getModelById,
+  LLM_PROVIDERS,
   type LlmProvider,
 } from "@/lib/ai/models";
 import { buildAuthMessage } from "@/lib/auth/messages";
@@ -18,6 +19,7 @@ import type { FanMemory } from "@/lib/memory/types";
 import { emptyFanMemory } from "@/lib/memory/types";
 import { getStoredLlmKeys } from "@/lib/storage/llm-keys";
 
+import { LlmSettingsModal } from "./LlmSettingsModal";
 import { MessageBubble } from "./MessageBubble";
 import { PredictionCard } from "./PredictionCard";
 import { PressRoomHeader } from "./PressRoomHeader";
@@ -40,6 +42,14 @@ export function ChatContainer({
   const [connectedProviders, setConnectedProviders] = useState<LlmProvider[]>(
     [],
   );
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    const keys = getStoredLlmKeys();
+    setConnectedProviders(
+      LLM_PROVIDERS.filter((p) => keys[p.id]).map((p) => p.id),
+    );
+  }, []);
 
   const canUseModel = useCallback(
     (id: string) => {
@@ -177,7 +187,14 @@ export function ChatContainer({
         memWalLive={memWalLive}
         hasServerLlmKey={hasServerLlmKey}
         connectedProviders={connectedProviders}
-        onConnectedProvidersChange={setConnectedProviders}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
+
+      <LlmSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        hasServerKey={hasServerLlmKey}
+        onKeysChange={setConnectedProviders}
       />
 
       <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[1fr_280px]">
@@ -231,8 +248,15 @@ export function ChatContainer({
               !hasServerLlmKey &&
               connectedProviders.length === 0 && (
                 <p className="mb-2 text-xs text-gold">
-                  Connect Claude, ChatGPT, or Gemini (🔑 Connect LLM) to start
-                  roasting.
+                  Open{" "}
+                  <button
+                    type="button"
+                    onClick={() => setSettingsOpen(true)}
+                    className="font-semibold text-pitch underline hover:text-gold"
+                  >
+                    Settings
+                  </button>{" "}
+                  to connect Claude, ChatGPT, or Gemini.
                 </p>
               )}
             <div className="flex gap-2">
@@ -243,7 +267,7 @@ export function ChatContainer({
                   canChat
                     ? "Declare your team, predict a score, or cope…"
                     : verified
-                      ? "Connect an LLM account first…"
+                      ? "Open Settings to connect an LLM…"
                       : "Waiting for wallet verification…"
                 }
                 disabled={!canChat || isLoading}

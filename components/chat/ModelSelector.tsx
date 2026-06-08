@@ -1,7 +1,6 @@
 "use client";
 
-import { CHAT_MODELS } from "@/lib/ai/models";
-import type { LlmProvider } from "@/lib/ai/models";
+import { CHAT_MODELS, type LlmProvider } from "@/lib/ai/models";
 
 export function ModelSelector({
   value,
@@ -12,13 +11,13 @@ export function ModelSelector({
   value: string;
   onChange: (id: string) => void;
   connectedProviders: LlmProvider[];
+  /** Server operator demo keys (e.g. OpenRouter on Vercel) */
   hasServerKey: boolean;
 }) {
   const canUse = (provider: LlmProvider) =>
     connectedProviders.includes(provider) || hasServerKey;
 
-  const anyAvailable =
-    hasServerKey || connectedProviders.length > 0;
+  const anyAvailable = hasServerKey || connectedProviders.length > 0;
 
   return (
     <select
@@ -27,7 +26,7 @@ export function ModelSelector({
       disabled={!anyAvailable}
       title={
         !anyAvailable
-          ? "Connect Claude, ChatGPT, or Gemini to pick a model"
+          ? "Open Settings and connect Claude, ChatGPT, or Gemini"
           : undefined
       }
       className="rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground focus:border-gold focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"

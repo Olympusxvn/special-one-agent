@@ -3,7 +3,8 @@ import { z } from "zod";
 
 import type { ConfidenceLevel } from "@/lib/memory/types";
 
-import { getIntentModel, hasAnyLlmKey, type UserLlmKeys } from "./providers";
+import { DEFAULT_MODEL_ID, getModelById } from "./models";
+import { getChatModel, hasProviderKey, type UserLlmKeys } from "./providers";
 
 export type MessageIntent =
   | "banter"
@@ -33,6 +34,7 @@ const intentSchema = z.object({
 
 const TEAM_PATTERNS = [
   /(?:i\s+support|my\s+team\s+is|fan\s+of)\s+([a-zA-Z\s]+)/i,
+  /my\s+([a-zA-Z\s]+)\s+team/i,
   /(?:go|vamos)\s+([a-zA-Z\s]+)!/i,
 ];
 
@@ -102,16 +104,18 @@ function parseIntentRegex(message: string): ParsedIntent {
 export async function detectIntent(
   message: string,
   userKeys?: UserLlmKeys,
+  modelId: string = DEFAULT_MODEL_ID,
 ): Promise<ParsedIntent> {
   const fallback = parseIntentRegex(message);
+  const model = getModelById(modelId) ?? getModelById(DEFAULT_MODEL_ID)!;
 
-  if (!hasAnyLlmKey(userKeys)) {
+  if (!hasProviderKey(model.provider, userKeys)) {
     return fallback;
   }
 
   try {
     const { object } = await generateObject({
-      model: getIntentModel(userKeys),
+      model: getChatModel(model.id, userKeys),
       schema: intentSchema,
       prompt: `Classify this football fan message for a World Cup 2026 roast bot.
 Message: "${message}"

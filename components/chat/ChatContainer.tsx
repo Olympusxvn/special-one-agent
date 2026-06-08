@@ -17,6 +17,7 @@ import { buildAuthMessage } from "@/lib/auth/messages";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 import type { FanMemory } from "@/lib/memory/types";
 import { emptyFanMemory } from "@/lib/memory/types";
+import { formatChatError } from "@/lib/chat/format-error";
 import { getStoredLlmKeys } from "@/lib/storage/llm-keys";
 import {
   clearStoredWalletAuth,
@@ -275,8 +276,8 @@ export function ChatContainer({
               </p>
             )}
             {error && (
-              <p className="text-sm text-roast">
-                {error.message || "Something went wrong."}
+              <p className="rounded-lg border border-roast/30 bg-roast/10 px-3 py-2 text-sm text-roast">
+                {formatChatError(error)}
               </p>
             )}
           </div>

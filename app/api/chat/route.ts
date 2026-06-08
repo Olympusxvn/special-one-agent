@@ -19,13 +19,11 @@ import {
   type UserLlmKeys,
 } from "@/lib/ai/providers";
 import { assertWalletAuth } from "@/lib/auth/verify-wallet";
-import { syncPendingPredictions } from "@/lib/football/sync-predictions";
+import { applyIntentToProfile } from "@/lib/memory/apply-intent";
 import {
-  addPrediction,
   appendRoast,
+  loadFanProfileFast,
   recallMemories,
-  resolvePrediction,
-  setFavoriteTeam,
 } from "@/lib/memory/fan-profile";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 
@@ -102,67 +100,35 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No user message" }, { status: 400 });
     }
 
-    const [syncResult, recalled] = await Promise.all([
-      syncPendingPredictions(walletAddress),
-      recallMemories(walletAddress, lastUserText, 3),
-    ]);
-    let profile = syncResult.profile;
-
     const intent = detectIntent(lastUserText);
 
-    if (intent.intent === "set_team" && intent.favorite_team) {
-      profile = await setFavoriteTeam(
-        walletAddress,
-        intent.favorite_team,
-        profile,
-      );
-    }
+    const [baseProfile, recalled] = await Promise.all([
+      loadFanProfileFast(walletAddress),
+      recallMemories(walletAddress, lastUserText, 2),
+    ]);
 
-    if (intent.intent === "prediction" && intent.prediction) {
-      profile = await addPrediction(walletAddress, profile, {
-        match: intent.match ?? "World Cup 2026 match",
-        prediction: intent.prediction,
-        fixtureId: intent.fixtureId,
-        confidence: intent.confidence_level,
-      });
-    }
-
-    if (intent.intent === "report_result" && intent.reported_result) {
-      profile = await resolvePrediction(walletAddress, profile, {
-        match: intent.match ?? lastUserText,
-        result: intent.reported_result,
-      });
-    }
-
+    const profile = applyIntentToProfile(walletAddress, baseProfile, intent);
     const toxicityLevel = computeToxicityLevel(profile);
-
-    let matchContext: string | undefined;
-    if (syncResult.resolved.length > 0) {
-      matchContext = syncResult.resolved
-        .map((r) => `${r.match}: ${r.result}`)
-        .join("\n");
-    }
 
     const system = buildSystemPrompt({
       fanProfile: profile,
       recalledMemories: recalled,
       toxicityLevel,
-      matchContext,
     });
 
     const result = streamText({
       model: getChatModel(selectedModel.id, userKeys),
       system,
       messages: modelMessages,
-      temperature: 0.8,
-      maxOutputTokens: 380,
-      onFinish: async ({ text }) => {
-        try {
-          const topics = extractRoastTopics(text);
-          await appendRoast(walletAddress, profile, text, topics);
-        } catch (err) {
-          console.error("appendRoast failed:", err);
-        }
+      temperature: 0.75,
+      maxOutputTokens: 200,
+      onFinish: ({ text }) => {
+        void appendRoast(
+          walletAddress,
+          profile,
+          text,
+          extractRoastTopics(text),
+        ).catch((err) => console.error("appendRoast failed:", err));
       },
     });
 

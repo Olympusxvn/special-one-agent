@@ -8,11 +8,32 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Demo prompt chips in press room (`lib/samples/demo-prompts.ts`) — tap to fill chat input for judges
+- `vercel.json` — `maxDuration: 60` on `/api/chat` (requires Vercel Pro for full effect; Hobby still capped ~10s)
+- Fast-path chat pipeline: `loadFanProfileFast`, `applyIntentToProfile`, `MR_TOXIC_FAST_PROMPT`
+
+### Changed
+
+- Removed Vercel AI Gateway — demo flow is **wallet + BYOK** (Gemini / ChatGPT / Claude in Settings)
+- Default model: **Gemini 2.0 Flash Lite** (fastest free-tier path)
+- Intent detection: regex only (removed extra LLM `generateObject` call before every stream)
+- MemWal writes: `remember()` fire-and-forget instead of `rememberAndWait()` on chat hot path
+- Chat history capped to last 6 turns; `maxOutputTokens: 200`; compact system prompt (~120 words target)
+
+### Fixed
+
+- `FUNCTION_INVOCATION_TIMEOUT` on 3rd+ message — serverless function exceeded wall clock while waiting on MemWal + long stream
+- Model mismatch (“No API key for Claude…”) when user saved ChatGPT/Gemini key but dropdown still on Claude
+- Slow time-to-first-token — sequential blocking work before `streamText()` (see lesson §9 below)
+
 ### Planned
 
 - Public repo (target ~19 Jun 2026) for hackathon submission
 - Memory Moment demo (Day 1 vs Day 4+ with same wallet)
 - Demo video & DeepSurge / Airtable forms
+- `FINAL_FEEDBACK.md` — synthesize lessons below for Walrus Sessions / MemWal forms
 
 ---
 
@@ -135,6 +156,90 @@ Ghi lại từ quá trình build hackathon — để lần sau không lặp lạ
 **Thực tế:** App không OAuth trực tiếp vào tài khoản chat web. Flow đúng: đăng nhập trên site provider → tạo **API key** → dán vào Settings (sessionStorage).
 
 **Bài học:** Ghi rõ trong UI/docs để user không kỳ vọng “đăng nhập một lần như ChatGPT.com”.
+
+**Demo path cho judges (ổn định nhất):** Connect Sui wallet → Verify → Settings → Gemini (free key từ [AI Studio](https://aistudio.google.com/apikey)) → Save → chọn **Gemini 2.0 Flash Lite** → gửi tin (hoặc tap demo chip).
+
+### 9. Chat chậm & `FUNCTION_INVOCATION_TIMEOUT` (tin nhắn thứ 3)
+
+> **Dùng cho `FINAL_FEEDBACK.md`:** mô tả triệu chứng production, nguyên nhân gốc, và trade-off MemWal trên serverless.
+
+**Triệu chứng (production `special-one-agent.vercel.app`, region `hkg1`):**
+
+- Tin 1–2: roast stream OK nhưng **chậm** (vài giây trước khi thấy chữ).
+- Tin 3: lỗi đỏ `An error occurred with your deployment` — `FUNCTION_INVOCATION_TIMEOUT`.
+- Một số lần: `API quota or billing issue` khi user dán Gemini key hết quota hoặc chọn model không khớp key.
+
+**Nguyên nhân gốc (không phải lỗi ví Sui):**
+
+| # | Nguyên nhân | Tác động |
+|---|-------------|----------|
+| 1 | **`rememberAndWait()` trước mỗi stream** — `setFavoriteTeam` / `addPrediction` / `appendRoast` await MemWal relayer | Cộng dồn 1–3s+ **trước** khi LLM bắt đầu stream; tin 3 cộng thêm `onFinish` + history dài |
+| 2 | **LLM intent** (`generateObject`) trước `streamText` | Thêm **một** round-trip API đầy đủ mỗi tin nhắn |
+| 3 | **`syncPendingPredictions()`** trên mọi chat turn | `loadFanProfile` + `recall` MemWal + có thể gọi API-Football theo `fixtureId` |
+| 4 | **System prompt dài** (~2k tokens) + full `FAN_PROFILE` JSON + 5 recalled memories | TTFT chậm, tổng thời gian lambda dài |
+| 5 | **`maxOutputTokens: 380`** + stream chưa xong | Lambda Vercel vẫn chạy đến hết stream; Hobby ~10s, Pro tối đa 60s (`export const maxDuration`) |
+| 6 | **Conversation history** gửi nguyên thread | Token input tăng theo số turn → tin 3 chậm hơn tin 1 |
+
+**Vì sao lỗi hay xuất hiện ở tin 3:**
+
+- Turn 1: cold start + MemWal load + prompt build + stream.
+- Turn 2: history dài hơn, có thể thêm prediction persist.
+- Turn 3: tổng thời gian **blocking + streaming** vượt ngưỡng serverless → timeout **trong lúc** hoặc **sau** stream (khi `onFinish` còn await MemWal).
+
+**Hướng xử lý đã áp dụng (trong repo):**
+
+1. MemWal: `remember()` **không await** trên hot path; cache in-memory trước.
+2. `loadFanProfileFast` / `recallMemories` — timeout ~1.2s, fallback profile/rỗng.
+3. Bỏ `syncPendingPredictions` khỏi `/api/chat` — sync qua nút **Check my predictions** (`/api/matches/sync`).
+4. Intent = regex (`detectIntent`), không gọi LLM phụ.
+5. `MR_TOXIC_FAST_PROMPT`, `maxOutputTokens: 200`, cap 6 turns history.
+6. `onFinish` → `void appendRoast(...)` không block response.
+7. `vercel.json` `maxDuration: 60` cho route chat.
+
+**Trade-off (ghi vào feedback MemWal):**
+
+- Fire-and-forget `remember` → demo nhanh hơn nhưng **không đảm bảo** write đã commit trước response; judge thấy roast ngay, memory có thể trễ vài giây.
+- Timeout recall → lần đầu wallet có thể roast **không** có full graveyard cho đến khi cache warm.
+- Cần pattern SDK: **`remember` vs `rememberAndWait`** rõ trong cookbook ([#246](https://github.com/MystenLabs/MemWal/issues/246)) + health/latency budget cho serverless.
+
+### 10. Vercel AI Gateway (đã thử, đã gỡ)
+
+**Mục tiêu:** User chỉ connect ví, không cần API key (Claude Haiku free qua Gateway).
+
+**Kết quả:** Phù hợp operator có Gateway credits/OIDC; với BYOK demo hackathon, flow **Settings + Gemini free key** đơn giản và dễ debug hơn. Gateway đã remove khỏi codebase (`lib/ai/gateway.ts` deleted); production dùng direct provider APIs + user keys.
+
+**Bài học:** Đừng trộn hai mô hình (Gateway server-side vs BYOK client-side) — chọn một demo path và document rõ cho judges.
+
+### 11. Model / API key mismatch
+
+**Triệu chứng:** `No API key for Claude Sonnet` dù user đã dán ChatGPT/Gemini key.
+
+**Nguyên nhân:** `DEFAULT_MODEL_ID` từng là `claude-sonnet`; dropdown không auto-sync sau Save.
+
+**Fix:** `pickModelForProviders` / `syncModelWithProviders` — sau Save key, dropdown chuyển sang provider khớp; default `gemini`.
+
+---
+
+## Gợi ý outline `FINAL_FEEDBACK.md`
+
+```markdown
+## What we built
+- Roast bot + per-wallet MemWal namespace + Sui wallet auth
+
+## What worked
+- Wallet-only identity, semantic recall for roasts, demo chips, BYOK Gemini free tier
+
+## Pain points (with evidence)
+- FUNCTION_INVOCATION_TIMEOUT — MemWal rememberAndWait + long stream on serverless
+- Latency stack: intent LLM + sync + recall + fat prompt
+- MemWal multi-tenant cookbook gap ([#246])
+
+## What we changed
+- (copy from [Unreleased] above)
+
+## Ask for MemWal / Walrus Sessions
+- Serverless latency guide, rememberAndWait semantics, upsert profile ([#247]), healthCheck ([#248])
+```
 
 ---
 

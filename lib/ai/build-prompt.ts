@@ -1,6 +1,6 @@
 import type { FanMemory } from "@/lib/memory/types";
 
-import { MR_TOXIC_SYSTEM_PROMPT } from "./system-prompt";
+import { MR_TOXIC_FAST_PROMPT } from "./system-prompt";
 
 export interface BuildPromptInput {
   fanProfile: FanMemory;
@@ -21,11 +21,9 @@ function compactFanProfile(profile: FanMemory) {
 }
 
 export function buildSystemPrompt(input: BuildPromptInput): string {
-  const parts = [MR_TOXIC_SYSTEM_PROMPT];
+  const parts = [MR_TOXIC_FAST_PROMPT];
 
-  parts.push(`\n## RUNTIME CONTEXT`);
-  parts.push(`TOXICITY_LEVEL: ${input.toxicityLevel}`);
-  parts.push(`Keep replies concise: opening roast + meme beat + 2–3 sentences + closing sting.`);
+  parts.push(`\nTOXICITY_LEVEL: ${input.toxicityLevel}`);
 
   parts.push(`\n## FAN_PROFILE`);
   parts.push(JSON.stringify(compactFanProfile(input.fanProfile)));

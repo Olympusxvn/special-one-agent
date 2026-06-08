@@ -40,12 +40,16 @@ export function getLastUserText(messages: UIMessage[]): string {
   return "";
 }
 
+const MAX_CHAT_TURNS = 6;
+
 export function toModelMessages(messages: UIMessage[]) {
-  return messages
+  const trimmed = messages
     .filter((m) => m.role === "user" || m.role === "assistant")
     .map((m) => ({
       role: m.role as "user" | "assistant",
       content: getMessageText(m),
     }))
     .filter((m) => m.content.trim());
+
+  return trimmed.slice(-MAX_CHAT_TURNS);
 }

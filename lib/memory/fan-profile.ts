@@ -52,10 +52,19 @@ export async function loadFanProfile(walletAddress: string): Promise<FanMemory> 
   return empty;
 }
 
-async function persistProfile(
+/** In-memory first; MemWal write is fire-and-forget (never block chat stream). */
+export function persistProfileCacheOnly(
   walletAddress: string,
   profile: FanMemory,
-): Promise<void> {
+): void {
+  persistProfile(walletAddress, profile);
+}
+
+export function rememberSemanticLine(walletAddress: string, line: string): void {
+  rememberSemantic(walletAddress, line);
+}
+
+function persistProfile(walletAddress: string, profile: FanMemory): void {
   profileCache.set(walletAddress, profile);
 
   const client = getMemWalClient();
@@ -63,26 +72,29 @@ async function persistProfile(
 
   const namespace = namespaceForWallet(walletAddress);
   const snapshot = `${PROFILE_PREFIX}${JSON.stringify(profile)}`;
-
-  try {
-    await client.rememberAndWait(snapshot, namespace);
-  } catch {
-    await client.remember(snapshot, namespace);
-  }
+  void client.remember(snapshot, namespace).catch(() => {});
 }
 
-async function rememberSemantic(
-  walletAddress: string,
-  line: string,
-): Promise<void> {
+function rememberSemantic(walletAddress: string, line: string): void {
   const client = getMemWalClient();
   if (!client) return;
   const namespace = namespaceForWallet(walletAddress);
-  try {
-    await client.remember(line, namespace);
-  } catch {
-    // non-fatal
-  }
+  void client.remember(line, namespace).catch(() => {});
+}
+
+export async function loadFanProfileFast(
+  walletAddress: string,
+  timeoutMs = 1200,
+): Promise<FanMemory> {
+  const cached = profileCache.get(walletAddress);
+  if (cached) return { ...cached };
+
+  const empty = emptyFanMemory();
+  const loaded = await Promise.race([
+    loadFanProfile(walletAddress),
+    new Promise<FanMemory>((resolve) => setTimeout(() => resolve(empty), timeoutMs)),
+  ]);
+  return loaded;
 }
 
 export async function setFavoriteTeam(
@@ -99,15 +111,15 @@ export async function setFavoriteTeam(
     next.favorite_team.toLowerCase() !== trimmed.toLowerCase()
   ) {
     next.flip_flop_count += 1;
-    await rememberSemantic(
+    rememberSemantic(
       walletAddress,
       `Flip-flop: switched from ${next.favorite_team} to ${trimmed}`,
     );
   }
 
   next.favorite_team = trimmed;
-  await persistProfile(walletAddress, next);
-  await rememberSemantic(
+  persistProfile(walletAddress, next);
+  rememberSemantic(
     walletAddress,
     `User supports ${trimmed}. Confidence: ${next.confidence_level}.`,
   );
@@ -138,8 +150,8 @@ export async function addPrediction(
   };
 
   next.past_predictions = [...next.past_predictions, entry].slice(-50);
-  await persistProfile(walletAddress, next);
-  await rememberSemantic(
+  persistProfile(walletAddress, next);
+  rememberSemantic(
     walletAddress,
     `Prediction: ${input.prediction} for ${input.match} — PENDING`,
   );
@@ -163,7 +175,7 @@ export async function resolvePrediction(
     return { ...p, result: input.result };
   });
 
-  await persistProfile(walletAddress, next);
+  persistProfile(walletAddress, next);
 
   const resolved = next.past_predictions.find(
     (p) => p.result === input.result && p.match.toLowerCase().includes(matchLower.slice(0, 8)),
@@ -172,7 +184,7 @@ export async function resolvePrediction(
   if (resolved) {
     const wrong =
       resolved.prediction.toLowerCase() !== input.result.toLowerCase();
-    await rememberSemantic(
+    rememberSemantic(
       walletAddress,
       wrong
         ? `Prediction WRONG: said ${resolved.prediction}, actual ${input.result}`
@@ -192,8 +204,8 @@ export async function appendRoast(
   const next = { ...profile };
   next.roast_history = [...next.roast_history, roast.slice(0, 500)].slice(-20);
   next.last_roast_topics = [...topics, ...next.last_roast_topics].slice(0, 5);
-  await persistProfile(walletAddress, next);
-  await rememberSemantic(walletAddress, `Roast delivered: ${roast.slice(0, 200)}`);
+  persistProfile(walletAddress, next);
+  rememberSemantic(walletAddress, `Roast delivered: ${roast.slice(0, 200)}`);
   return next;
 }
 
@@ -206,11 +218,16 @@ export async function recallMemories(
   if (!client) return [];
 
   try {
-    const result = await client.recall({
-      query,
-      limit,
-      namespace: namespaceForWallet(walletAddress),
-    });
+    const result = await Promise.race([
+      client.recall({
+        query,
+        limit,
+        namespace: namespaceForWallet(walletAddress),
+      }),
+      new Promise<{ results: { text: string }[] }>((resolve) =>
+        setTimeout(() => resolve({ results: [] }), 1200),
+      ),
+    ]);
     return result.results.map((r) => r.text);
   } catch {
     return [];

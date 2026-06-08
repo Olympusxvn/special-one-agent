@@ -1,9 +1,4 @@
-import { generateObject } from "ai";
-import { z } from "zod";
-
 import type { ConfidenceLevel } from "@/lib/memory/types";
-
-import { getIntentModel, hasAnyLlmKey, type UserLlmKeys } from "./providers";
 
 export type MessageIntent =
   | "banter"
@@ -21,25 +16,17 @@ export interface ParsedIntent {
   fixtureId?: number;
 }
 
-const intentSchema = z.object({
-  intent: z.enum(["banter", "set_team", "prediction", "report_result"]),
-  favorite_team: z.string().optional(),
-  match: z.string().optional(),
-  prediction: z.string().optional(),
-  reported_result: z.string().optional(),
-  confidence_level: z.enum(["high", "medium", "low"]).optional(),
-  fixtureId: z.number().optional(),
-});
-
 const TEAM_PATTERNS = [
   /(?:i\s+support|my\s+team\s+is|fan\s+of)\s+([a-zA-Z\s]+)/i,
   /my\s+([a-zA-Z\s]+)\s+team/i,
   /(?:go|vamos)\s+([a-zA-Z\s]+)!/i,
+  /^([a-zA-Z][a-zA-Z\s]{2,30})$/i,
 ];
 
 const PREDICTION_PATTERNS = [
   /(?:predict|think|bet)\s+(.+?)\s+(?:will\s+)?(?:win|beat|defeat)\s+(.+)/i,
   /(.+?)\s+(\d+-\d+)\s+(.+)/i,
+  /(.+?)\s+will\s+beat\s+(.+)/i,
 ];
 
 const RESULT_PATTERNS = [
@@ -47,7 +34,8 @@ const RESULT_PATTERNS = [
   /(?:final|result|score)[:\s]+(.+?)\s+(\d+-\d+)/i,
 ];
 
-function parseIntentRegex(message: string): ParsedIntent {
+/** Fast regex intent — no extra LLM round-trip before streaming. */
+export function detectIntent(message: string): ParsedIntent {
   const text = message.trim();
 
   for (const pattern of RESULT_PATTERNS) {
@@ -78,7 +66,7 @@ function parseIntentRegex(message: string): ParsedIntent {
     }
   }
 
-  if (/predict|scoreline|will win|going to win/i.test(text)) {
+  if (/predict|scoreline|will win|going to win|will beat/i.test(text)) {
     return {
       intent: "prediction",
       match: "World Cup 2026 match",
@@ -90,50 +78,23 @@ function parseIntentRegex(message: string): ParsedIntent {
   for (const pattern of TEAM_PATTERNS) {
     const m = text.match(pattern);
     if (m?.[1]) {
-      return {
-        intent: "set_team",
-        favorite_team: m[1].trim(),
-      };
+      const team = m[1].trim();
+      if (team.length >= 3 && !/^(the|and|but)$/i.test(team)) {
+        return {
+          intent: "set_team",
+          favorite_team: team,
+        };
+      }
     }
   }
 
   return { intent: "banter" };
 }
 
-export async function detectIntent(
-  message: string,
-  userKeys?: UserLlmKeys,
-): Promise<ParsedIntent> {
-  const fallback = parseIntentRegex(message);
-
-  if (!hasAnyLlmKey(userKeys)) {
-    return fallback;
-  }
-
-  try {
-    const { object } = await generateObject({
-      model: getIntentModel(userKeys),
-      schema: intentSchema,
-      prompt: `Classify this football fan message for a World Cup 2026 roast bot.
-Message: "${message}"
-
-Return intent:
-- set_team: declares favorite team
-- prediction: predicts a match outcome
-- report_result: reports actual match result
-- banter: general chat`,
-    });
-    return object;
-  } catch {
-    return fallback;
-  }
-}
-
 export function extractRoastTopics(text: string): string[] {
   const topics: string[] = [];
-  if (/prediction|predicted|score/i.test(text)) topics.push("wrong_prediction");
-  if (/flip|bandwagon|switched/i.test(text)) topics.push("flip_flop");
-  if (/team|fan|supporter/i.test(text)) topics.push("team_roast");
-  if (/confidence|cope|fiction/i.test(text)) topics.push("confidence_mock");
-  return topics.slice(0, 3);
+  if (/wrong|missed|failed/i.test(text)) topics.push("wrong_prediction");
+  if (/flip.?flop|switched/i.test(text)) topics.push("flip_flop");
+  if (/bandwagon/i.test(text)) topics.push("bandwagon");
+  return topics;
 }

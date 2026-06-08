@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { useCurrentAccount, useSignPersonalMessage } from "@mysten/dapp-kit";
 import { DefaultChatTransport } from "ai";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { WorldCupWatermark } from "@/components/world-cup/WorldCupWatermark";
 import {
@@ -13,13 +13,13 @@ import {
   syncModelWithProviders,
   type LlmProvider,
 } from "@/lib/ai/models";
-
-type ByokProvider = Exclude<LlmProvider, "gateway">;
+import { isModelAvailableForUser } from "@/lib/ai/providers";
+import type { ServerLlmCapabilities } from "@/lib/ai/server-llm";
 import { buildAuthMessage } from "@/lib/auth/messages";
+import { formatChatError } from "@/lib/chat/format-error";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 import type { FanMemory } from "@/lib/memory/types";
 import { emptyFanMemory } from "@/lib/memory/types";
-import { formatChatError } from "@/lib/chat/format-error";
 import { getStoredLlmKeys } from "@/lib/storage/llm-keys";
 import {
   clearStoredWalletAuth,
@@ -27,49 +27,64 @@ import {
   setStoredWalletAuth,
 } from "@/lib/storage/wallet-auth";
 
+import { DemoPromptChips } from "./DemoPromptChips";
 import { LlmSettingsModal } from "./LlmSettingsModal";
 import { MessageBubble } from "./MessageBubble";
 import { PredictionCard } from "./PredictionCard";
 import { PressRoomHeader } from "./PressRoomHeader";
 
+function buildLlmOptions(
+  connected: LlmProvider[],
+  serverLlm: ServerLlmCapabilities,
+) {
+  const keys = getStoredLlmKeys();
+  return {
+    hasOpenRouter: Boolean(keys.openrouter) || serverLlm.openRouter,
+    serverProviders: serverLlm.providers,
+    connected,
+  };
+}
+
 export function ChatContainer({
   memWalLive,
-  hasGateway,
-  hasServerByok,
+  serverLlm,
 }: {
   memWalLive: boolean;
-  hasGateway: boolean;
-  hasServerByok: boolean;
+  serverLlm: ServerLlmCapabilities;
 }) {
   const account = useCurrentAccount();
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [modelId, setModelId] = useState(() =>
-    pickModelForProviders(
-      LLM_PROVIDERS.filter((p) => getStoredLlmKeys()[p.id]).map((p) => p.id),
-      { hasGateway, hasServerKey: hasServerByok },
-    ),
-  );
+  const [modelId, setModelId] = useState(() => {
+    const connected = LLM_PROVIDERS.filter((p) => getStoredLlmKeys()[p.id]).map(
+      (p) => p.id,
+    );
+    return pickModelForProviders(connected, buildLlmOptions(connected, serverLlm));
+  });
   const [profile, setProfile] = useState<FanMemory | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [input, setInput] = useState("");
-  const [connectedProviders, setConnectedProviders] = useState<ByokProvider[]>(
+  const [connectedProviders, setConnectedProviders] = useState<LlmProvider[]>(
     [],
   );
+  const [hasUserOpenRouter, setHasUserOpenRouter] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const modelIdRef = useRef(modelId);
+  useEffect(() => {
+    modelIdRef.current = modelId;
+  }, [modelId]);
+
   const handleProvidersChange = useCallback(
-    (providers: ByokProvider[]) => {
+    (providers: LlmProvider[]) => {
+      const keys = getStoredLlmKeys();
       setConnectedProviders(providers);
-      setModelId((id) =>
-        syncModelWithProviders(id, providers, {
-          hasGateway,
-          hasServerKey: hasServerByok,
-        }),
-      );
+      setHasUserOpenRouter(Boolean(keys.openrouter));
+      const opts = buildLlmOptions(providers, serverLlm);
+      setModelId((id) => syncModelWithProviders(id, providers, opts));
     },
-    [hasGateway, hasServerByok],
+    [serverLlm],
   );
 
   useEffect(() => {
@@ -83,28 +98,33 @@ export function ChatContainer({
     (id: string) => {
       const model = getModelById(id);
       if (!model) return false;
-      if (model.provider === "gateway") return hasGateway;
-      return (
-        connectedProviders.includes(model.provider) || hasServerByok
+      return isModelAvailableForUser(
+        model,
+        connectedProviders,
+        serverLlm,
+        hasUserOpenRouter,
       );
     },
-    [connectedProviders, hasGateway, hasServerByok],
+    [connectedProviders, serverLlm, hasUserOpenRouter],
   );
+
+  const hasAnyLlmBackend =
+    connectedProviders.length > 0 ||
+    serverLlm.providers.length > 0 ||
+    serverLlm.openRouter ||
+    hasUserOpenRouter;
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/chat",
-        body: {
-          walletAddress: account?.address,
-          modelId,
-        },
-        prepareSendMessagesRequest: ({ body, messages }) => {
+        prepareSendMessagesRequest: ({ messages }) => {
           const keys = getStoredLlmKeys();
           const auth = getStoredWalletAuth();
           return {
             body: {
-              ...body,
+              walletAddress: account?.address,
+              modelId: modelIdRef.current,
               messages,
               llmKeys: {
                 ...(keys.anthropic ? { anthropic: keys.anthropic } : {}),
@@ -122,7 +142,7 @@ export function ChatContainer({
           };
         },
       }),
-    [account?.address, modelId],
+    [account?.address],
   );
 
   const { messages, sendMessage, status, error } = useChat({ transport });
@@ -207,10 +227,7 @@ export function ChatContainer({
 
   const toxicityLevel = computeToxicityLevel(profile ?? emptyFanMemory());
   const isLoading = status === "streaming" || status === "submitted";
-  const canChat =
-    verified &&
-    (hasGateway || hasServerByok || connectedProviders.length > 0) &&
-    canUseModel(modelId);
+  const canChat = verified && hasAnyLlmBackend && canUseModel(modelId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,17 +263,16 @@ export function ChatContainer({
         modelId={modelId}
         onModelChange={setModelId}
         memWalLive={memWalLive}
-        hasGateway={hasGateway}
-        hasServerByok={hasServerByok}
+        serverLlm={serverLlm}
         connectedProviders={connectedProviders}
+        hasUserOpenRouter={hasUserOpenRouter}
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
       <LlmSettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        hasGateway={hasGateway}
-        hasServerKey={hasServerByok}
+        serverLlm={serverLlm}
         onKeysChange={handleProvidersChange}
       />
 
@@ -272,6 +288,10 @@ export function ChatContainer({
                   Tell me your team, make a World Cup prediction, or report a
                   result — I remember everything. 🤡
                 </p>
+                <DemoPromptChips
+                  disabled={!canChat || isLoading}
+                  onPick={setInput}
+                />
               </div>
             )}
             {messages.map((m) => {
@@ -307,19 +327,30 @@ export function ChatContainer({
                 {verifying ? "Signing wallet…" : "Verifying wallet signature…"}
               </p>
             )}
-            {verified && !hasGateway && !hasServerByok && connectedProviders.length === 0 && (
+            {verified && !hasAnyLlmBackend && (
               <p className="mb-2 text-xs text-gold">
-                Local dev: set{" "}
-                <code className="text-foreground/70">AI_GATEWAY_API_KEY</code> or
-                open{" "}
+                Open{" "}
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(true)}
                   className="font-semibold text-pitch underline hover:text-gold"
                 >
-                  Advanced
+                  Settings
                 </button>{" "}
-                to paste your own API key.
+                and paste a Gemini, ChatGPT, or Claude API key.
+              </p>
+            )}
+            {verified && hasAnyLlmBackend && !canUseModel(modelId) && (
+              <p className="mb-2 text-xs text-gold">
+                Selected model needs a matching key in{" "}
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(true)}
+                  className="font-semibold text-pitch underline hover:text-gold"
+                >
+                  Settings
+                </button>
+                , or pick another model.
               </p>
             )}
             <div className="flex gap-2">
@@ -330,7 +361,7 @@ export function ChatContainer({
                   canChat
                     ? "Declare your team, predict a score, or cope…"
                     : verified
-                      ? "Waiting for LLM backend…"
+                      ? "Connect an LLM in Settings…"
                       : "Waiting for wallet verification…"
                 }
                 disabled={!canChat || isLoading}

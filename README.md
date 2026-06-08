@@ -27,7 +27,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) → connect Sui wallet → **Enter Press Room** (`/chat`).  
 **Schedules & Results:** [`/schedules`](http://localhost:3000/schedules) — fixtures, results, and free RSS headlines (API-Football free tier when configured; curated demo fixtures otherwise).
 
-**Production:** [special-one-agent.vercel.app](https://special-one-agent.vercel.app) — MemWal mainnet live; **Claude Haiku 4.5 free** via [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) — connect wallet only, no API key (see [Demo](#demo-wallet-only) below).
+**Production:** [special-one-agent.vercel.app](https://special-one-agent.vercel.app) — MemWal mainnet live; connect wallet + paste API key in Settings (see [Demo](#demo-for-judges) below).
 
 **Production build:**
 
@@ -42,8 +42,10 @@ Works with `pnpm` or `npm` interchangeably.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `AI_GATEWAY_API_KEY` | No* | Vercel AI Gateway — local dev; production uses OIDC |
-| `OPENROUTER_API_KEY` | No | Optional operator BYOK fallback |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | No | Optional server demo; users can BYOK Gemini in Settings |
+| `OPENAI_API_KEY` | No | Optional server demo; users can BYOK ChatGPT in Settings |
+| `ANTHROPIC_API_KEY` | No | Optional server demo; users can BYOK Claude in Settings |
+| `OPENROUTER_API_KEY` | No | Optional fallback for all models |
 | `MEMWAL_PRIVATE_KEY` | No* | Delegate key hex — server only; get from [memory.walrus.xyz/dashboard](https://memory.walrus.xyz/dashboard) |
 | `MEMWAL_ACCOUNT_ID` | No* | MemWal account object ID |
 | `NEXT_PUBLIC_MEMWAL_ACCOUNT_ID` | No | Same as above — shows explorer link in UI |
@@ -55,29 +57,20 @@ Works with `pnpm` or `npm` interchangeably.
 
 \*MemWal keys required for persistent cross-session memory demo. Setup: [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md). Verify: `npm run memwal:verify`.
 
-\*On Vercel production, chat uses **Claude Haiku 4.5** through AI Gateway — users only connect a Sui wallet (no `AI_GATEWAY_API_KEY` env needed; Vercel OIDC handles auth).
+\*Chat requires a user API key in Settings (or operator server keys). Recommended for judges: **Gemini** free key from [Google AI Studio](https://aistudio.google.com/apikey).
 
-## Demo (wallet only)
+## Demo for judges
 
-**Judges & visitors — no API key required on production:**
+**~30 seconds to first roast:**
 
 1. Open [special-one-agent.vercel.app/chat](https://special-one-agent.vercel.app/chat)
-2. Connect your **Sui wallet** → approve the verify signature
-3. Model defaults to **Claude Haiku 4.5 (free)** — send a message and get roasted
+2. Connect **Sui wallet** → approve verify signature
+3. **⚙️ Settings** → **Gemini** tab → paste free `AIza…` key from [AI Studio](https://aistudio.google.com/apikey) → **Save key**
+4. Model auto-selects **Gemini 2.0 Flash Lite** (fastest) — tap a **demo line** chip or type your own → **Send**
 
-Powered by [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) (`anthropic/claude-haiku-4.5`). The operator's Vercel project includes free monthly gateway credits.
+**Sample inputs** (also shown as chips in the press room): Brazil fan hype, score predictions, team pick (`France`), flip-flop, result report, banter.
 
-**Local dev:** set `AI_GATEWAY_API_KEY` in `.env.local` (from your Vercel team → AI Gateway), or use **Advanced** in the press room to paste your own Claude / ChatGPT / Gemini key.
-
-## Advanced — Bring Your Own Key (optional)
-
-Power users can paste their own API key under **⚙️ Advanced** in the press room:
-
-1. Pick **Claude**, **ChatGPT**, or **Gemini**
-2. Paste key → **Save key**
-3. Switch model in the dropdown
-
-Keys live in `sessionStorage` only — never stored server-side or committed to git.
+Also works with **ChatGPT** or **Claude** keys in Settings. Keys stay in `sessionStorage` only — never on the server or in git.
 
 ## Project Structure
 

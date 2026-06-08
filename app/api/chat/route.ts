@@ -78,11 +78,18 @@ export async function POST(req: Request) {
       getModelById(modelId ?? DEFAULT_MODEL_ID) ?? CHAT_MODELS[0]!;
 
     if (!hasProviderKey(selectedModel.provider, userKeys)) {
-      const hint =
-        selectedModel.provider === "gateway"
-          ? "Claude Haiku (free) requires Vercel production or AI_GATEWAY_API_KEY on the server."
-          : `No API key for ${selectedModel.label}. Open Advanced → paste a ${selectedModel.provider} key, or switch to Claude Haiku (free).`;
-      return NextResponse.json({ error: hint }, { status: 401 });
+      const tab =
+        selectedModel.provider === "google"
+          ? "Gemini"
+          : selectedModel.provider === "openai"
+            ? "ChatGPT"
+            : "Claude";
+      return NextResponse.json(
+        {
+          error: `No API key for ${selectedModel.label}. Open Settings → ${tab} tab → paste your key, or switch to a model you have connected.`,
+        },
+        { status: 401 },
+      );
     }
 
     const lastUserText = getLastUserText(messages);
@@ -95,10 +102,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "No user message" }, { status: 400 });
     }
 
-    const syncResult = await syncPendingPredictions(walletAddress);
+    const [syncResult, recalled] = await Promise.all([
+      syncPendingPredictions(walletAddress),
+      recallMemories(walletAddress, lastUserText, 3),
+    ]);
     let profile = syncResult.profile;
 
-    const intent = await detectIntent(lastUserText, userKeys);
+    const intent = detectIntent(lastUserText);
 
     if (intent.intent === "set_team" && intent.favorite_team) {
       profile = await setFavoriteTeam(
@@ -124,7 +134,6 @@ export async function POST(req: Request) {
       });
     }
 
-    const recalled = await recallMemories(walletAddress, lastUserText, 5);
     const toxicityLevel = computeToxicityLevel(profile);
 
     let matchContext: string | undefined;
@@ -145,7 +154,8 @@ export async function POST(req: Request) {
       model: getChatModel(selectedModel.id, userKeys),
       system,
       messages: modelMessages,
-      temperature: 0.85,
+      temperature: 0.8,
+      maxOutputTokens: 380,
       onFinish: async ({ text }) => {
         try {
           const topics = extractRoastTopics(text);

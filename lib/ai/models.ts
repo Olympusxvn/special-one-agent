@@ -1,6 +1,4 @@
-import { GATEWAY_CHAT_MODEL } from "./gateway";
-
-export type LlmProvider = "gateway" | "anthropic" | "openai" | "google";
+export type LlmProvider = "anthropic" | "openai" | "google";
 
 export interface ModelOption {
   id: string;
@@ -14,7 +12,7 @@ export interface ModelOption {
 }
 
 export const LLM_PROVIDERS: {
-  id: Exclude<LlmProvider, "gateway">;
+  id: LlmProvider;
   name: string;
   loginUrl: string;
   keyUrl: string;
@@ -22,103 +20,113 @@ export const LLM_PROVIDERS: {
   placeholder: string;
 }[] = [
   {
-    id: "anthropic",
-    name: "Claude",
-    loginUrl: "https://claude.ai/login",
-    keyUrl: "https://console.anthropic.com/settings/keys",
-    keyHint: "Log in at claude.ai → Console → API Keys",
-    placeholder: "sk-ant-…",
+    id: "google",
+    name: "Gemini",
+    loginUrl: "https://gemini.google.com/",
+    keyUrl: "https://aistudio.google.com/apikey",
+    keyHint:
+      "Free tier: aistudio.google.com/apikey → Create API key → paste AIza…",
+    placeholder: "AIza…",
   },
   {
     id: "openai",
     name: "ChatGPT",
     loginUrl: "https://chat.openai.com/",
     keyUrl: "https://platform.openai.com/api-keys",
-    keyHint: "Log in at chat.openai.com → Platform → API Keys",
+    keyHint: "platform.openai.com/api-keys → Create key → paste sk-…",
     placeholder: "sk-…",
   },
   {
-    id: "google",
-    name: "Gemini",
-    loginUrl: "https://gemini.google.com/",
-    keyUrl: "https://aistudio.google.com/apikey",
-    keyHint:
-      "aistudio.google.com/apikey → Create API key → paste AIza… below",
-    placeholder: "AIza…",
+    id: "anthropic",
+    name: "Claude",
+    loginUrl: "https://claude.ai/login",
+    keyUrl: "https://console.anthropic.com/settings/keys",
+    keyHint: "console.anthropic.com → API Keys → paste sk-ant-…",
+    placeholder: "sk-ant-…",
   },
 ];
 
 export const CHAT_MODELS: ModelOption[] = [
   {
-    id: "claude-haiku",
-    provider: "gateway",
-    label: "Claude Haiku 4.5",
-    description: "Free — wallet only (Vercel AI Gateway)",
-    directModelId: GATEWAY_CHAT_MODEL,
-    openRouterModelId: "anthropic/claude-3.5-haiku",
+    id: "gemini",
+    provider: "google",
+    label: "Gemini 2.0 Flash Lite",
+    description: "Fastest — free tier",
+    directModelId: "gemini-2.0-flash-lite",
+    openRouterModelId: "google/gemini-2.0-flash-001",
   },
   {
     id: "chatgpt",
     provider: "openai",
     label: "ChatGPT (GPT-4o Mini)",
-    description: "BYOK — your OpenAI key",
+    description: "Fast & sharp",
     directModelId: "gpt-4o-mini",
     openRouterModelId: "openai/gpt-4o-mini",
   },
   {
-    id: "gemini",
-    provider: "google",
-    label: "Gemini 2.0 Flash",
-    description: "BYOK — your Google key",
-    directModelId: "gemini-2.0-flash",
-    openRouterModelId: "google/gemini-2.0-flash-001",
+    id: "claude-haiku",
+    provider: "anthropic",
+    label: "Claude Haiku",
+    description: "Fast Claude",
+    directModelId: "claude-3-5-haiku-20241022",
+    openRouterModelId: "anthropic/claude-3.5-haiku",
   },
   {
     id: "claude-sonnet",
     provider: "anthropic",
     label: "Claude Sonnet",
-    description: "BYOK — best roast quality",
+    description: "Best roast quality",
     directModelId: "claude-sonnet-4-20250514",
     openRouterModelId: "anthropic/claude-3.5-sonnet",
   },
 ];
 
-export const DEFAULT_MODEL_ID = "claude-haiku";
+export const DEFAULT_MODEL_ID = "gemini";
 
-/** Pick default model: gateway first, then first connected BYOK provider. */
+const MODEL_PICK_ORDER = ["gemini", "chatgpt", "claude-haiku", "claude-sonnet"] as const;
+
+/** Pick the first model whose provider has a connected key. */
 export function pickModelForProviders(
-  providers: Exclude<LlmProvider, "gateway">[],
-  options: { hasGateway?: boolean; hasServerKey?: boolean } = {},
+  providers: LlmProvider[],
+  options: { hasOpenRouter?: boolean; serverProviders?: LlmProvider[] } = {},
 ): string {
-  if (options.hasGateway) return DEFAULT_MODEL_ID;
-  if (options.hasServerKey) return "chatgpt";
-  const match = CHAT_MODELS.find(
-    (m) => m.provider !== "gateway" && providers.includes(m.provider),
-  );
-  return match?.id ?? DEFAULT_MODEL_ID;
+  const server = options.serverProviders ?? [];
+  for (const id of MODEL_PICK_ORDER) {
+    const model = getModelById(id);
+    if (!model) continue;
+    if (
+      providers.includes(model.provider) ||
+      server.includes(model.provider) ||
+      options.hasOpenRouter
+    ) {
+      return id;
+    }
+  }
+  return DEFAULT_MODEL_ID;
 }
 
 export function syncModelWithProviders(
   currentModelId: string,
-  providers: Exclude<LlmProvider, "gateway">[],
-  options: { hasGateway?: boolean; hasServerKey?: boolean } = {},
+  providers: LlmProvider[],
+  options: { hasOpenRouter?: boolean; serverProviders?: LlmProvider[] } = {},
 ): string {
   const current = getModelById(currentModelId);
-  if (current?.provider === "gateway" && options.hasGateway) {
-    return currentModelId;
-  }
-  if (
-    options.hasServerKey ||
-    (current &&
-      current.provider !== "gateway" &&
-      providers.includes(current.provider))
-  ) {
+  if (current && isProviderCovered(current.provider, providers, options)) {
     return currentModelId;
   }
   return pickModelForProviders(providers, options);
 }
 
-export const INTENT_MODEL_ID = "claude-haiku";
+function isProviderCovered(
+  provider: LlmProvider,
+  connected: LlmProvider[],
+  options: { hasOpenRouter?: boolean; serverProviders?: LlmProvider[] },
+): boolean {
+  if (connected.includes(provider)) return true;
+  if (options.serverProviders?.includes(provider)) return true;
+  if (options.hasOpenRouter) return true;
+  return false;
+}
 
 export function getModelById(id: string): ModelOption | undefined {
   return CHAT_MODELS.find((m) => m.id === id);

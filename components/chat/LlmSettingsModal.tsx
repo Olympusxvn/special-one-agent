@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { LLM_PROVIDERS, type LlmProvider } from "@/lib/ai/models";
-
-type ByokProvider = Exclude<LlmProvider, "gateway">;
+import type { ServerLlmCapabilities } from "@/lib/ai/server-llm";
 import {
   clearStoredProviderKey,
   getStoredLlmKeys,
@@ -16,19 +15,17 @@ import {
 export function LlmSettingsModal({
   open,
   onClose,
-  hasGateway,
-  hasServerKey,
+  serverLlm,
   onKeysChange,
 }: {
   open: boolean;
   onClose: () => void;
-  hasGateway: boolean;
-  hasServerKey: boolean;
-  onKeysChange: (connected: ByokProvider[]) => void;
+  serverLlm: ServerLlmCapabilities;
+  onKeysChange: (connected: LlmProvider[]) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<ByokProvider>("openai");
-  const [drafts, setDrafts] = useState<Partial<Record<ByokProvider, string>>>({});
-  const [connected, setConnected] = useState<ByokProvider[]>([]);
+  const [activeTab, setActiveTab] = useState<LlmProvider>("google");
+  const [drafts, setDrafts] = useState<Partial<Record<LlmProvider, string>>>({});
+  const [connected, setConnected] = useState<LlmProvider[]>([]);
 
   const refresh = useCallback(() => {
     const keys = getStoredLlmKeys();
@@ -75,12 +72,10 @@ export function LlmSettingsModal({
 
   const statusLabel =
     connected.length > 0
-      ? `BYOK: ${connected.map((id) => LLM_PROVIDERS.find((p) => p.id === id)?.name).join(", ")}`
-      : hasGateway
-        ? "Claude Haiku (free) active — wallet only"
-        : hasServerKey
-          ? "Server demo key active"
-          : "No LLM backend — set AI_GATEWAY_API_KEY or paste a key";
+      ? `Connected: ${connected.map((id) => LLM_PROVIDERS.find((p) => p.id === id)?.name).join(", ")}`
+      : serverLlm.providers.length > 0 || serverLlm.openRouter
+        ? "Server demo keys active"
+        : "Paste an API key below to start chatting";
 
   return (
     <div
@@ -109,7 +104,7 @@ export function LlmSettingsModal({
               id="llm-settings-title"
               className="font-display text-2xl tracking-wide text-gold"
             >
-              Advanced — BYOK
+              LLM Connection
             </h2>
           </div>
           <button
@@ -122,28 +117,34 @@ export function LlmSettingsModal({
           </button>
         </div>
 
-        {hasGateway ? (
-          <p className="mb-4 rounded-lg border border-pitch/30 bg-pitch/5 px-3 py-2 text-xs text-foreground/70">
-            <strong className="text-pitch">No key needed.</strong> Production uses{" "}
-            <strong>Claude Haiku 4.5</strong> free via{" "}
-            <a
-              href="https://vercel.com/docs/ai-gateway"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gold underline"
-            >
-              Vercel AI Gateway
-            </a>{" "}
-            — connect wallet and chat. Paste keys below only if you want a
-            different model (ChatGPT, Gemini, Claude Sonnet).
-          </p>
-        ) : (
-          <p className="mb-4 text-sm text-foreground/70">
-            Optional: paste your own API key for ChatGPT, Gemini, or Claude.
-            For local dev without keys, set{" "}
-            <code className="text-foreground/80">AI_GATEWAY_API_KEY</code> in{" "}
-            <code className="text-foreground/80">.env.local</code>.
-          </p>
+        <p className="mb-4 text-sm text-foreground/70">
+          Paste an API key for the provider you want. After saving, the model
+          dropdown switches to match (e.g. Gemini key → Gemini model). Keys stay
+          in this browser tab only.
+        </p>
+
+        {activeTab === "google" && (
+          <ol className="mb-4 list-decimal space-y-1 pl-4 text-xs text-foreground/60">
+            <li>
+              Open{" "}
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold underline"
+              >
+                Google AI Studio
+              </a>{" "}
+              (free tier)
+            </li>
+            <li>
+              Click <strong>Create API key</strong>
+            </li>
+            <li>
+              Paste <code className="text-foreground/80">AIza…</code> below →{" "}
+              <strong>Save key</strong>
+            </li>
+          </ol>
         )}
 
         <div className="mb-4 flex gap-1">

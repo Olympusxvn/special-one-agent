@@ -1,4 +1,5 @@
 import type { LlmProvider } from "@/lib/ai/models";
+import type { ServerLlmCapabilities } from "@/lib/ai/server-llm";
 
 import { WalletButton } from "@/components/wallet/WalletButton";
 import { WorldCupLogo } from "@/components/world-cup/WorldCupLogo";
@@ -7,27 +8,31 @@ import { MemWalStatus } from "./MemWalStatus";
 import { ModelSelector } from "./ModelSelector";
 import { ToxicityMeter } from "./ToxicityMeter";
 
-type ByokProvider = Exclude<LlmProvider, "gateway">;
-
 export function PressRoomHeader({
   toxicityLevel,
   modelId,
   onModelChange,
   memWalLive,
-  hasGateway,
-  hasServerByok,
+  serverLlm,
   connectedProviders,
+  hasUserOpenRouter,
   onOpenSettings,
 }: {
   toxicityLevel: number;
   modelId: string;
   onModelChange: (id: string) => void;
   memWalLive: boolean;
-  hasGateway: boolean;
-  hasServerByok: boolean;
-  connectedProviders: ByokProvider[];
+  serverLlm: ServerLlmCapabilities;
+  connectedProviders: LlmProvider[];
+  hasUserOpenRouter: boolean;
   onOpenSettings: () => void;
 }) {
+  const llmReady =
+    connectedProviders.length > 0 ||
+    serverLlm.providers.length > 0 ||
+    serverLlm.openRouter ||
+    hasUserOpenRouter;
+
   return (
     <>
       <div className="pitch-accent-bar" />
@@ -54,25 +59,23 @@ export function PressRoomHeader({
               type="button"
               onClick={onOpenSettings}
               className="shrink-0 rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground transition hover:border-gold/50"
-              aria-label="Open advanced LLM settings"
+              aria-label="Open LLM settings"
             >
-              ⚙️ Advanced
+              ⚙️ Settings
+              {!llmReady ? (
+                <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-roast" />
+              ) : null}
             </button>
             <ModelSelector
               value={modelId}
               onChange={onModelChange}
               connectedProviders={connectedProviders}
-              hasGateway={hasGateway}
-              hasServerByok={hasServerByok}
+              serverLlm={serverLlm}
+              hasUserOpenRouter={hasUserOpenRouter}
             />
             <WalletButton />
           </div>
         </div>
-        {hasGateway && (
-          <p className="mx-auto mt-2 max-w-6xl text-center text-[10px] text-foreground/45">
-            Claude Haiku 4.5 free via Vercel AI Gateway — connect wallet only, no API key
-          </p>
-        )}
       </header>
     </>
   );

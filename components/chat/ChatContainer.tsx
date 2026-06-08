@@ -81,12 +81,13 @@ export function ChatContainer({
           walletAddress: account?.address,
           modelId,
         },
-        prepareSendMessagesRequest: ({ body }) => {
+        prepareSendMessagesRequest: ({ body, messages }) => {
           const keys = getStoredLlmKeys();
           const auth = getStoredWalletAuth();
           return {
             body: {
               ...body,
+              messages,
               llmKeys: {
                 ...(keys.anthropic ? { anthropic: keys.anthropic } : {}),
                 ...(keys.openai ? { openai: keys.openai } : {}),

@@ -7,10 +7,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { WorldCupWatermark } from "@/components/world-cup/WorldCupWatermark";
 import {
-  CHAT_MODELS,
-  DEFAULT_MODEL_ID,
   getModelById,
   LLM_PROVIDERS,
+  pickModelForProviders,
+  syncModelWithProviders,
   type LlmProvider,
 } from "@/lib/ai/models";
 import { buildAuthMessage } from "@/lib/auth/messages";
@@ -41,7 +41,12 @@ export function ChatContainer({
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
   const [verified, setVerified] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const [modelId, setModelId] = useState(DEFAULT_MODEL_ID);
+  const [modelId, setModelId] = useState(() =>
+    pickModelForProviders(
+      LLM_PROVIDERS.filter((p) => getStoredLlmKeys()[p.id]).map((p) => p.id),
+      hasServerLlmKey,
+    ),
+  );
   const [profile, setProfile] = useState<FanMemory | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [input, setInput] = useState("");
@@ -50,12 +55,20 @@ export function ChatContainer({
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const handleProvidersChange = useCallback(
+    (providers: LlmProvider[]) => {
+      setConnectedProviders(providers);
+      setModelId((id) => syncModelWithProviders(id, providers, hasServerLlmKey));
+    },
+    [hasServerLlmKey],
+  );
+
   useEffect(() => {
     const keys = getStoredLlmKeys();
-    setConnectedProviders(
+    handleProvidersChange(
       LLM_PROVIDERS.filter((p) => keys[p.id]).map((p) => p.id),
     );
-  }, []);
+  }, [handleProvidersChange]);
 
   const canUseModel = useCallback(
     (id: string) => {
@@ -67,12 +80,6 @@ export function ChatContainer({
     },
     [connectedProviders, hasServerLlmKey],
   );
-
-  useEffect(() => {
-    if (canUseModel(modelId)) return;
-    const fallback = CHAT_MODELS.find((m) => canUseModel(m.id));
-    if (fallback) setModelId(fallback.id);
-  }, [modelId, canUseModel]);
 
   const transport = useMemo(
     () =>
@@ -238,7 +245,7 @@ export function ChatContainer({
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         hasServerKey={hasServerLlmKey}
-        onKeysChange={setConnectedProviders}
+        onKeysChange={handleProvidersChange}
       />
 
       <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[1fr_280px]">

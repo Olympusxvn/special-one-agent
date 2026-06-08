@@ -27,7 +27,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000) → connect Sui wallet → **Enter Press Room** (`/chat`).  
 **Schedules & Results:** [`/schedules`](http://localhost:3000/schedules) — fixtures, results, and free RSS headlines (API-Football free tier when configured; curated demo fixtures otherwise).
 
-**Production:** [special-one-agent.vercel.app](https://special-one-agent.vercel.app) — MemWal mainnet live; **OpenRouter BYOK required** (paste your key in the press room header; no server LLM key on production).
+**Production:** [special-one-agent.vercel.app](https://special-one-agent.vercel.app) — MemWal mainnet live; **bring your own LLM key** in Settings (see [Free demo with Gemini](#free-demo-with-gemini) below).
 
 **Production build:**
 
@@ -54,20 +54,43 @@ Works with `pnpm` or `npm` interchangeably.
 
 \*MemWal keys required for persistent cross-session memory demo. Setup: [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md). Verify: `npm run memwal:verify`.
 
-\*Chat requires **either** a user-connected OpenRouter key **or** server `OPENROUTER_API_KEY` (demo fallback).
+\*Chat requires **either** a user-connected API key (Claude, ChatGPT, or Gemini) **or** a server demo key (`OPENROUTER_API_KEY` or provider env vars).
 
-## Bring Your Own Key (OpenRouter)
+## Free demo with Gemini
 
-Users pick their roast model with **their** OpenRouter credentials — not only the operator's server key:
+**Recommended for judges and first-time users** — Google offers a free API tier; no credit card required for basic usage.
 
-1. Open [openrouter.ai/keys](https://openrouter.ai/keys) in your browser and sign in
-2. Copy your API key from the dashboard
-3. In the press room header, click **Connect** → paste key → **Save**
-4. Choose a model from the dropdown; chat requests use your key for that browser tab
+1. Open **[Google AI Studio → API keys](https://aistudio.google.com/apikey)** and sign in with your Google account
+2. Click **Create API key** (pick a Google Cloud project or create one when prompted)
+3. Copy the key — it starts with `AIza…`
+4. Go to [special-one-agent.vercel.app/chat](https://special-one-agent.vercel.app/chat) (or run locally)
+5. Connect your **Sui wallet** → **Verify** signature
+6. Click **⚙️ Settings** in the press room header → tab **Gemini**
+7. Paste the key → **Save key** → **Done**
+8. The model dropdown auto-selects **Gemini 2.0 Flash** — send a message and get roasted
 
-Keys live in `sessionStorage` only (`openrouter_api_key`) and are sent per chat request — never logged or stored server-side. If no user key is connected, the app falls back to server `OPENROUTER_API_KEY` when configured (demo mode for judges).
+Keys stay in **sessionStorage** for this browser tab only. They are sent with chat requests but never stored on the server or committed to git.
 
-**Walrus Sessions demo:** An toàn đủ cho Walrus Sessions demo — your key stays in the browser session only.
+**Troubleshooting**
+
+| Issue | Fix |
+|-------|-----|
+| “No API key for …” | Open Settings and save a key for the **same** provider as the selected model |
+| Key works locally, not on Vercel | Production has no server LLM key — you must paste your own key in Settings |
+| Rate limit / quota | Wait a minute or create a new key in AI Studio; free tier has daily limits |
+
+**Alternatives:** ChatGPT ([platform.openai.com/api-keys](https://platform.openai.com/api-keys)) or Claude ([console.anthropic.com](https://console.anthropic.com/settings/keys)) — same Settings flow, different tab. **Ollama** is local-only (`npm run dev` + `OLLAMA_BASE_URL`); it does not run on Vercel serverless.
+
+## Bring Your Own Key (LLM)
+
+Users connect **their** provider API key — not the operator's server key:
+
+1. Sign in on the provider site (links inside **Settings**)
+2. Create an API key
+3. In the press room, click **⚙️ Settings** → pick **Claude**, **ChatGPT**, or **Gemini** → paste → **Save key**
+4. The model dropdown switches to match your connected provider automatically
+
+Keys live in `sessionStorage` only and are sent per chat request — never logged or stored server-side. If no user key is connected, the app falls back to server env keys when configured (operator demo mode).
 
 ## Project Structure
 

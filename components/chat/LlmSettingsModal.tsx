@@ -22,7 +22,7 @@ export function LlmSettingsModal({
   hasServerKey: boolean;
   onKeysChange: (connected: LlmProvider[]) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<LlmProvider>("anthropic");
+  const [activeTab, setActiveTab] = useState<LlmProvider>("openai");
   const [drafts, setDrafts] = useState<Partial<Record<LlmProvider, string>>>({});
   const [connected, setConnected] = useState<LlmProvider[]>([]);
 
@@ -117,9 +117,21 @@ export function LlmSettingsModal({
         </div>
 
         <p className="mb-4 text-sm text-foreground/70">
-          Log in to your Claude, ChatGPT, or Gemini web account, create an API
-          key, and paste it below. Keys stay in this browser tab only
-          (sessionStorage).
+          Paste an API key for the provider you want. After saving, the model
+          dropdown switches automatically (e.g. ChatGPT key → ChatGPT model).
+          Keys stay in this browser tab only (sessionStorage).
+        </p>
+        <p className="mb-4 rounded-lg border border-pitch/30 bg-pitch/5 px-3 py-2 text-xs text-foreground/60">
+          <strong className="text-pitch">Free demo tip:</strong> Gemini key from{" "}
+          <a
+            href="https://aistudio.google.com/apikey"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gold underline"
+          >
+            Google AI Studio
+          </a>{" "}
+          is free and works on production. Ollama is local-only (not on Vercel).
         </p>
 
         <div className="mb-4 flex gap-1">
@@ -159,7 +171,27 @@ export function LlmSettingsModal({
           </a>
         </div>
 
-        <p className="mb-2 text-xs text-foreground/50">{provider.keyHint}</p>
+        {activeTab === "google" ? (
+          <ol className="mb-3 list-decimal space-y-1 pl-4 text-xs text-foreground/60">
+            <li>
+              Open{" "}
+              <a
+                href="https://aistudio.google.com/apikey"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold underline"
+              >
+                Google AI Studio
+              </a>{" "}
+              and sign in with Google
+            </li>
+            <li>Click <strong>Create API key</strong> (choose or create a project)</li>
+            <li>Copy the key (<code className="text-foreground/80">AIza…</code>)</li>
+            <li>Paste below → <strong>Save key</strong> → model switches to Gemini</li>
+          </ol>
+        ) : (
+          <p className="mb-2 text-xs text-foreground/50">{provider.keyHint}</p>
+        )}
 
         <input
           type="password"

@@ -4,10 +4,7 @@ import { NewsFeed } from "@/components/news/NewsFeed";
 import { WorldCupLogo } from "@/components/world-cup/WorldCupLogo";
 import { WorldCupStripe } from "@/components/world-cup/WorldCupStripe";
 import { WorldCupWatermark } from "@/components/world-cup/WorldCupWatermark";
-import {
-  getFootballDataSource,
-  getWorldCupFixtures,
-} from "@/lib/football/provider";
+import { getWorldCupFixtures } from "@/lib/football/provider";
 import { formatFixtureResult, isFixtureFinished } from "@/lib/football/types";
 import type { FixtureSummary } from "@/lib/football/types";
 
@@ -74,7 +71,6 @@ function FixtureRow({ fixture }: { fixture: FixtureSummary }) {
 }
 
 export default async function SchedulesPage() {
-  const source = getFootballDataSource();
   const fixtures = await getWorldCupFixtures();
   const finished = fixtures.filter((f) => isFixtureFinished(f));
   const upcoming = fixtures.filter((f) => !isFixtureFinished(f));
@@ -112,31 +108,6 @@ export default async function SchedulesPage() {
       </header>
 
       <main className="relative mx-auto max-w-3xl space-y-10 px-4 py-8">
-        {source === "static-demo" && (
-          <p className="rounded-xl border border-dashed border-gold/30 bg-gold/5 p-6 text-sm text-foreground/60">
-            Showing curated demo fixtures (no live API key). For live schedules and
-            results, set{" "}
-            <code className="text-gold">API_FOOTBALL_KEY</code> on the server — free
-            tier at{" "}
-            <a
-              href="https://www.api-football.com/"
-              className="text-pitch underline hover:text-gold"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              api-football.com
-            </a>{" "}
-            (~100 requests/day). Manual match results in chat still work without a
-            key.
-          </p>
-        )}
-
-        {source === "api-football" && (
-          <p className="text-xs text-foreground/45">
-            Data via API-Football (free tier) · FIFA World Cup 2026
-          </p>
-        )}
-
         <section>
           <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gold">
             <span>🏆</span> Results ({finished.length})

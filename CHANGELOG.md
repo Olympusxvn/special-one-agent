@@ -77,150 +77,150 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## Bài học (Lessons learned)
+## Lessons learned
 
-Ghi lại từ quá trình build hackathon — để lần sau không lặp lại.
+Notes from the hackathon build — so we do not repeat the same mistakes.
 
-### 1. MemWal trên serverless (Vercel)
+### 1. MemWal on serverless (Vercel)
 
-**Vấn đề:** Một `MemWalAccount` + **delegate key** trên server, mỗi user chỉ connect Sui wallet — pattern multi-tenant không có sẵn trong quickstart.
+**Problem:** One `MemWalAccount` + **delegate key** on the server; each user only connects a Sui wallet — a multi-tenant pattern not covered in the quickstart.
 
-**Bài học:**
+**Lessons:**
 
-- Document rõ: operator tạo account, user chỉ ký ví; namespace `special-one-{address}`.
-- Structured state (JSON profile) + semantic `recall` dễ trả snapshot cũ → đã file issue [#247](https://github.com/MystenLabs/MemWal/issues/247) (upsert / key-based recall).
-- `npm run memwal:verify` chỉ check env — nên có `healthCheck()` thật ([#248](https://github.com/MystenLabs/MemWal/issues/248)).
+- Document clearly: operator creates the account; users only sign with their wallet; namespace `special-one-{address}`.
+- Structured state (JSON profile) + semantic `recall` can return stale snapshots → filed issue [#247](https://github.com/MystenLabs/MemWal/issues/247) (upsert / key-based recall).
+- `npm run memwal:verify` only checks env — a real `healthCheck()` would help ([#248](https://github.com/MystenLabs/MemWal/issues/248)).
 
-### 2. Wallet auth và serverless
+### 2. Wallet auth and serverless
 
-**Vấn đề:** `/api/auth/verify` ghi session vào `Map` in-memory → request `/api/chat` rơi sang lambda khác → `Wallet not verified`.
+**Problem:** `/api/auth/verify` wrote sessions to an in-memory `Map` → `/api/chat` hit a different lambda → `Wallet not verified`.
 
-**Bài học:**
+**Lessons:**
 
-- **Không tin in-memory session** trên Vercel/serverless.
-- Lưu `message` + `signature` trong `sessionStorage`, gửi kèm **mỗi** API call; server verify chữ ký Sui (stateless).
-- Lỗi hiện ở app backend, **không phải** lỗi ChatGPT/Claude.
+- **Do not trust in-memory sessions** on Vercel/serverless.
+- Store `message` + `signature` in `sessionStorage` and send them with **every** API call; server verifies the Sui signature (stateless).
+- The error is in the app backend, **not** a ChatGPT/Claude API key issue.
 
 ### 3. AI SDK `DefaultChatTransport`
 
-**Vấn đề:** `prepareSendMessagesRequest` trả `body` tùy chỉnh → SDK **thay hẳn** body mặc định → thiếu `messages` → `No user message`.
+**Problem:** `prepareSendMessagesRequest` returned a custom `body` → SDK **replaced** the default body entirely → missing `messages` → `No user message`.
 
-**Bài học:**
+**Lessons:**
 
-- Khi override `body`, **bắt buộc** spread và thêm `messages` từ callback.
-- Lỗi xảy ra **trước** khi gọi LLM — đừng debug nhầm sang API key OpenAI.
+- When overriding `body`, **must** spread defaults and include `messages` from the callback.
+- The failure happens **before** the LLM call — do not misdiagnose as an OpenAI API key problem.
 
-### 4. Dữ liệu bóng đá — free-first
+### 4. Football data — free-first
 
-**Vấn đề:** SportMonks WC API trả phí; widget embed cần domain whitelist.
+**Problem:** SportMonks WC API is paid; embed widgets need domain whitelisting.
 
-**Bài học:**
+**Lessons:**
 
-- **News:** RSS (Google News + BBC) — ổn, không key.
-- **Lịch/kết quả:** `API_FOOTBALL_KEY` (free tier ~100 req/ngày) hoặc `data/wc2026-fixtures.json` demo khi không có key.
-- Đừng trộn widget hub vào app roast nếu user chỉ cần schedules — giữ scope nhỏ.
+- **News:** RSS (Google News + BBC) — works well, no key.
+- **Schedules/results:** `API_FOOTBALL_KEY` (free tier ~100 req/day) or `data/wc2026-fixtures.json` demo when no key.
+- Do not bolt a widget hub onto the roast app if users only need schedules — keep scope small.
 
 ### 5. UI / UX
 
-**Vấn đề:** Dropdown nhập key trong header bị welcome card che; input chat chữ trắng trên nền trắng (autofill).
+**Problem:** Header key dropdown was covered by the welcome card; chat input showed white text on white background (autofill).
 
-**Bài học:**
+**Lessons:**
 
-- Form nhạy cảm (API key) → **modal Settings** full-screen `z-[200]`, không dropdown trong header.
-- Input dark theme: class `.chat-input` + `color-scheme: dark` + override `-webkit-autofill`.
+- Sensitive forms (API keys) → **Settings modal** full-screen `z-[200]`, not a header dropdown.
+- Dark-theme inputs: `.chat-input` + `color-scheme: dark` + `-webkit-autofill` override.
 
-### 6. Deploy Vercel
+### 6. Vercel deploy
 
-**Vấn đề:** `git push` không tự deploy; production lag vài commit.
+**Problem:** `git push` did not auto-deploy; production lagged several commits behind.
 
-**Bài học:**
+**Lessons:**
 
-- Repo **private** cần Git integration + quyền Vercel trên GitHub, hoặc `npx vercel --prod --yes` sau mỗi push quan trọng.
-- Verify production: `curl` `/schedules`, `/api/news`, `/api/matches/fixtures` — không chỉ xem landing cũ.
-- Windows đôi khi `.next` ENOENT khi build — `rm -rf .next` rồi build lại.
+- **Private** repos need Git integration + Vercel permissions on GitHub, or `npx vercel --prod --yes` after important pushes.
+- Verify production: `curl` `/schedules`, `/api/news`, `/api/matches/fixtures` — not just the landing page cache.
+- On Windows, `.next` ENOENT during build sometimes — `rm -rf .next` then rebuild.
 
-### 7. Hackathon & repo
+### 7. Hackathon and repo
 
-**Vấn đề:** Issue MemWal public ≠ repo private; judge không đọc được code/README.
+**Problem:** Public MemWal issues ≠ private repo; judges cannot read code/README.
 
-**Bài học:**
+**Lessons:**
 
-- Submission cần **repo public** + live URL + explorer MemWalAccount + video Memory Moment.
-- Feedback prize: link issue MemWal trong form — không phụ thuộc README private.
-- 3 issue đã mở: cookbook multi-tenant ([#246](https://github.com/MystenLabs/MemWal/issues/246)), structured state ([#247](https://github.com/MystenLabs/MemWal/issues/247)), healthCheck ([#248](https://github.com/MystenLabs/MemWal/issues/248)).
+- Submission needs **public repo** + live URL + MemWalAccount explorer link + Memory Moment video.
+- Feedback prize: link MemWal issues in the form — does not depend on a private README.
+- Three issues filed: multi-tenant cookbook ([#246](https://github.com/MystenLabs/MemWal/issues/246)), structured state ([#247](https://github.com/MystenLabs/MemWal/issues/247)), healthCheck ([#248](https://github.com/MystenLabs/MemWal/issues/248)).
 
-### 8. LLM — “login web” vs API key
+### 8. LLM — web login vs API key
 
-**Kỳ vọng:** User login Claude/ChatGPT/Gemini như trên web.
+**Expectation:** Users log into Claude/ChatGPT/Gemini like on the web.
 
-**Thực tế:** App không OAuth trực tiếp vào tài khoản chat web. Flow đúng: đăng nhập trên site provider → tạo **API key** → dán vào Settings (sessionStorage).
+**Reality:** The app does not OAuth into chat web accounts. Correct flow: sign in on the provider site → create an **API key** → paste into Settings (`sessionStorage`).
 
-**Bài học:** Ghi rõ trong UI/docs để user không kỳ vọng “đăng nhập một lần như ChatGPT.com”.
+**Lesson:** State clearly in UI/docs so users do not expect “one-click login like ChatGPT.com”.
 
-**Demo path cho judges (ổn định nhất):** Connect Sui wallet → Verify → Settings → Gemini (free key từ [AI Studio](https://aistudio.google.com/apikey)) → Save → chọn **Gemini 2.0 Flash Lite** → gửi tin (hoặc tap demo chip).
+**Most stable judge demo path:** Connect Sui wallet → Verify → Settings → Gemini (free key from [AI Studio](https://aistudio.google.com/apikey)) → Save → select **Gemini 2.0 Flash Lite** → send a message (or tap a demo chip).
 
-### 9. Chat chậm & `FUNCTION_INVOCATION_TIMEOUT` (tin nhắn thứ 3)
+### 9. Slow chat and `FUNCTION_INVOCATION_TIMEOUT` (3rd message)
 
-> **Dùng cho `FINAL_FEEDBACK.md`:** mô tả triệu chứng production, nguyên nhân gốc, và trade-off MemWal trên serverless.
+> **For `FINAL_FEEDBACK.md`:** production symptoms, root causes, and MemWal trade-offs on serverless.
 
-**Triệu chứng (production `special-one-agent.vercel.app`, region `hkg1`):**
+**Symptoms (production `special-one-agent.vercel.app`, region `hkg1`):**
 
-- Tin 1–2: roast stream OK nhưng **chậm** (vài giây trước khi thấy chữ).
-- Tin 3: lỗi đỏ `An error occurred with your deployment` — `FUNCTION_INVOCATION_TIMEOUT`.
-- Một số lần: `API quota or billing issue` khi user dán Gemini key hết quota hoặc chọn model không khớp key.
+- Messages 1–2: roast streams OK but **slow** (several seconds before text appears).
+- Message 3: red error `An error occurred with your deployment` — `FUNCTION_INVOCATION_TIMEOUT`.
+- Sometimes: `API quota or billing issue` when the Gemini key is out of quota or the selected model does not match the saved key.
 
-**Nguyên nhân gốc (không phải lỗi ví Sui):**
+**Root causes (not a Sui wallet bug):**
 
-| # | Nguyên nhân | Tác động |
-|---|-------------|----------|
-| 1 | **`rememberAndWait()` trước mỗi stream** — `setFavoriteTeam` / `addPrediction` / `appendRoast` await MemWal relayer | Cộng dồn 1–3s+ **trước** khi LLM bắt đầu stream; tin 3 cộng thêm `onFinish` + history dài |
-| 2 | **LLM intent** (`generateObject`) trước `streamText` | Thêm **một** round-trip API đầy đủ mỗi tin nhắn |
-| 3 | **`syncPendingPredictions()`** trên mọi chat turn | `loadFanProfile` + `recall` MemWal + có thể gọi API-Football theo `fixtureId` |
-| 4 | **System prompt dài** (~2k tokens) + full `FAN_PROFILE` JSON + 5 recalled memories | TTFT chậm, tổng thời gian lambda dài |
-| 5 | **`maxOutputTokens: 380`** + stream chưa xong | Lambda Vercel vẫn chạy đến hết stream; Hobby ~10s, Pro tối đa 60s (`export const maxDuration`) |
-| 6 | **Conversation history** gửi nguyên thread | Token input tăng theo số turn → tin 3 chậm hơn tin 1 |
+| # | Cause | Impact |
+|---|--------|--------|
+| 1 | **`rememberAndWait()` before each stream** — `setFavoriteTeam` / `addPrediction` / `appendRoast` await MemWal relayer | Adds 1–3s+ **before** LLM streaming starts; message 3 also pays `onFinish` + longer history |
+| 2 | **LLM intent** (`generateObject`) before `streamText` | One extra full API round-trip per message |
+| 3 | **`syncPendingPredictions()` on every chat turn** | `loadFanProfile` + MemWal `recall` + possible API-Football calls per `fixtureId` |
+| 4 | **Long system prompt** (~2k tokens) + full `FAN_PROFILE` JSON + 5 recalled memories | Slow TTFT, longer total lambda time |
+| 5 | **`maxOutputTokens: 380`** + incomplete stream | Vercel lambda runs until stream ends; Hobby ~10s, Pro up to 60s (`export const maxDuration`) |
+| 6 | **Full conversation history** sent each turn | Input tokens grow per turn → message 3 slower than message 1 |
 
-**Vì sao lỗi hay xuất hiện ở tin 3:**
+**Why the failure often hits on message 3:**
 
 - Turn 1: cold start + MemWal load + prompt build + stream.
-- Turn 2: history dài hơn, có thể thêm prediction persist.
-- Turn 3: tổng thời gian **blocking + streaming** vượt ngưỡng serverless → timeout **trong lúc** hoặc **sau** stream (khi `onFinish` còn await MemWal).
+- Turn 2: longer history, possible prediction persist.
+- Turn 3: total **blocking + streaming** time exceeds serverless limit → timeout **during** or **after** stream (when `onFinish` still awaited MemWal).
 
-**Hướng xử lý đã áp dụng (trong repo):**
+**Mitigations applied (in repo):**
 
-1. MemWal: `remember()` **không await** trên hot path; cache in-memory trước.
-2. `loadFanProfileFast` / `recallMemories` — timeout ~1.2s, fallback profile/rỗng.
-3. Bỏ `syncPendingPredictions` khỏi `/api/chat` — sync qua nút **Check my predictions** (`/api/matches/sync`).
-4. Intent = regex (`detectIntent`), không gọi LLM phụ.
-5. `MR_TOXIC_FAST_PROMPT`, `maxOutputTokens: 200`, cap 6 turns history.
-6. `onFinish` → `void appendRoast(...)` không block response.
-7. `vercel.json` `maxDuration: 60` cho route chat.
+1. MemWal: `remember()` **not awaited** on hot path; in-memory cache first.
+2. `loadFanProfileFast` / `recallMemories` — ~1.2s timeout, fallback to empty profile.
+3. Removed `syncPendingPredictions` from `/api/chat` — sync via **Check my predictions** (`/api/matches/sync`).
+4. Intent = regex (`detectIntent`), no auxiliary LLM call.
+5. `MR_TOXIC_FAST_PROMPT`, `maxOutputTokens: 200`, cap history at 6 turns.
+6. `onFinish` → `void appendRoast(...)` does not block the response.
+7. `vercel.json` `maxDuration: 60` for the chat route.
 
-**Trade-off (ghi vào feedback MemWal):**
+**Trade-offs (for MemWal feedback):**
 
-- Fire-and-forget `remember` → demo nhanh hơn nhưng **không đảm bảo** write đã commit trước response; judge thấy roast ngay, memory có thể trễ vài giây.
-- Timeout recall → lần đầu wallet có thể roast **không** có full graveyard cho đến khi cache warm.
-- Cần pattern SDK: **`remember` vs `rememberAndWait`** rõ trong cookbook ([#246](https://github.com/MystenLabs/MemWal/issues/246)) + health/latency budget cho serverless.
+- Fire-and-forget `remember` → faster demo but **no guarantee** the write committed before the response; judges see the roast immediately, memory may lag a few seconds.
+- Recall timeout → first wallet session may roast **without** full prediction graveyard until cache warms.
+- SDK needs a clear **`remember` vs `rememberAndWait`** pattern in the cookbook ([#246](https://github.com/MystenLabs/MemWal/issues/246)) plus a serverless latency budget.
 
-### 10. Vercel AI Gateway (đã thử, đã gỡ)
+### 10. Vercel AI Gateway (tried, removed)
 
-**Mục tiêu:** User chỉ connect ví, không cần API key (Claude Haiku free qua Gateway).
+**Goal:** Users only connect a wallet, no API key (free Claude Haiku via Gateway).
 
-**Kết quả:** Phù hợp operator có Gateway credits/OIDC; với BYOK demo hackathon, flow **Settings + Gemini free key** đơn giản và dễ debug hơn. Gateway đã remove khỏi codebase (`lib/ai/gateway.ts` deleted); production dùng direct provider APIs + user keys.
+**Outcome:** Works for operators with Gateway credits/OIDC; for hackathon BYOK demo, **Settings + free Gemini key** is simpler and easier to debug. Gateway removed from codebase (`lib/ai/gateway.ts` deleted); production uses direct provider APIs + user keys.
 
-**Bài học:** Đừng trộn hai mô hình (Gateway server-side vs BYOK client-side) — chọn một demo path và document rõ cho judges.
+**Lesson:** Do not mix two models (server-side Gateway vs client-side BYOK) — pick one demo path and document it for judges.
 
 ### 11. Model / API key mismatch
 
-**Triệu chứng:** `No API key for Claude Sonnet` dù user đã dán ChatGPT/Gemini key.
+**Symptom:** `No API key for Claude Sonnet` even after pasting a ChatGPT/Gemini key.
 
-**Nguyên nhân:** `DEFAULT_MODEL_ID` từng là `claude-sonnet`; dropdown không auto-sync sau Save.
+**Cause:** `DEFAULT_MODEL_ID` was `claude-sonnet`; dropdown did not auto-sync after Save.
 
-**Fix:** `pickModelForProviders` / `syncModelWithProviders` — sau Save key, dropdown chuyển sang provider khớp; default `gemini`.
+**Fix:** `pickModelForProviders` / `syncModelWithProviders` — after Save, dropdown switches to the matching provider; default `gemini`.
 
 ---
 
-## Gợi ý outline `FINAL_FEEDBACK.md`
+## Suggested `FINAL_FEEDBACK.md` outline
 
 ```markdown
 ## What we built

@@ -2,6 +2,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createOpenAI } from "@ai-sdk/openai";
 
+import { getGatewayChatModel, isGatewayAvailable } from "./gateway";
 import {
   CHAT_MODELS,
   getModelById,
@@ -10,10 +11,12 @@ import {
 } from "./models";
 
 export type UserLlmKeys = Partial<
-  Record<LlmProvider | "openrouter", string>
+  Record<Exclude<LlmProvider, "gateway"> | "openrouter", string>
 >;
 
-function serverKeyForProvider(provider: LlmProvider): string | undefined {
+function serverKeyForProvider(
+  provider: Exclude<LlmProvider, "gateway">,
+): string | undefined {
   switch (provider) {
     case "anthropic":
       return process.env.ANTHROPIC_API_KEY?.trim();
@@ -25,7 +28,7 @@ function serverKeyForProvider(provider: LlmProvider): string | undefined {
 }
 
 export function resolveProviderApiKey(
-  provider: LlmProvider,
+  provider: Exclude<LlmProvider, "gateway">,
   userKeys?: UserLlmKeys,
 ): string | undefined {
   const user = userKeys?.[provider]?.trim();
@@ -43,14 +46,25 @@ export function hasProviderKey(
   provider: LlmProvider,
   userKeys?: UserLlmKeys,
 ): boolean {
+  if (provider === "gateway") return isGatewayAvailable();
   return Boolean(
     resolveProviderApiKey(provider, userKeys) ||
       resolveOpenRouterApiKey(userKeys),
   );
 }
 
+export function hasServerByokKeys(): boolean {
+  return (
+    (["anthropic", "openai", "google"] as const).some((p) =>
+      Boolean(serverKeyForProvider(p)),
+    ) || Boolean(process.env.OPENROUTER_API_KEY?.trim())
+  );
+}
+
 export function hasAnyLlmKey(userKeys?: UserLlmKeys): boolean {
   return (
+    isGatewayAvailable() ||
+    hasServerByokKeys() ||
     CHAT_MODELS.some((m) => hasProviderKey(m.provider, userKeys)) ||
     Boolean(resolveOpenRouterApiKey(userKeys))
   );
@@ -70,6 +84,16 @@ function createOpenRouterClient(apiKey: string) {
 
 export function getChatModel(modelId: string, userKeys?: UserLlmKeys) {
   const model = getModelById(modelId) ?? CHAT_MODELS[0]!;
+
+  if (model.provider === "gateway") {
+    if (!isGatewayAvailable()) {
+      throw new Error(
+        "Claude Haiku (free) is only available on Vercel production. Connect your own API key in Settings for local dev.",
+      );
+    }
+    return getGatewayChatModel();
+  }
+
   const directKey = resolveProviderApiKey(model.provider, userKeys);
 
   if (directKey) {
@@ -88,15 +112,19 @@ export function getChatModel(modelId: string, userKeys?: UserLlmKeys) {
   const orKey = resolveOpenRouterApiKey(userKeys);
   if (!orKey) {
     throw new Error(
-      `API key required for ${model.label}. Connect your ${model.provider} account in the header.`,
+      `API key required for ${model.label}. Connect your ${model.provider} account in Settings.`,
     );
   }
   return createOpenRouterClient(orKey).chat(model.openRouterModelId);
 }
 
 export function getIntentModel(userKeys?: UserLlmKeys) {
+  if (isGatewayAvailable()) {
+    return getGatewayChatModel();
+  }
   const intentModel =
-    getModelById("gemini") ?? CHAT_MODELS.find((m) => m.provider === "google")!;
+    getModelById("claude-haiku") ??
+    CHAT_MODELS.find((m) => m.provider === "anthropic")!;
   return getChatModel(intentModel.id, userKeys);
 }
 

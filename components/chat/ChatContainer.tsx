@@ -13,6 +13,8 @@ import {
   syncModelWithProviders,
   type LlmProvider,
 } from "@/lib/ai/models";
+
+type ByokProvider = Exclude<LlmProvider, "gateway">;
 import { buildAuthMessage } from "@/lib/auth/messages";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 import type { FanMemory } from "@/lib/memory/types";
@@ -32,10 +34,12 @@ import { PressRoomHeader } from "./PressRoomHeader";
 
 export function ChatContainer({
   memWalLive,
-  hasServerLlmKey,
+  hasGateway,
+  hasServerByok,
 }: {
   memWalLive: boolean;
-  hasServerLlmKey: boolean;
+  hasGateway: boolean;
+  hasServerByok: boolean;
 }) {
   const account = useCurrentAccount();
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
@@ -44,23 +48,28 @@ export function ChatContainer({
   const [modelId, setModelId] = useState(() =>
     pickModelForProviders(
       LLM_PROVIDERS.filter((p) => getStoredLlmKeys()[p.id]).map((p) => p.id),
-      hasServerLlmKey,
+      { hasGateway, hasServerKey: hasServerByok },
     ),
   );
   const [profile, setProfile] = useState<FanMemory | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [input, setInput] = useState("");
-  const [connectedProviders, setConnectedProviders] = useState<LlmProvider[]>(
+  const [connectedProviders, setConnectedProviders] = useState<ByokProvider[]>(
     [],
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleProvidersChange = useCallback(
-    (providers: LlmProvider[]) => {
+    (providers: ByokProvider[]) => {
       setConnectedProviders(providers);
-      setModelId((id) => syncModelWithProviders(id, providers, hasServerLlmKey));
+      setModelId((id) =>
+        syncModelWithProviders(id, providers, {
+          hasGateway,
+          hasServerKey: hasServerByok,
+        }),
+      );
     },
-    [hasServerLlmKey],
+    [hasGateway, hasServerByok],
   );
 
   useEffect(() => {
@@ -74,11 +83,12 @@ export function ChatContainer({
     (id: string) => {
       const model = getModelById(id);
       if (!model) return false;
+      if (model.provider === "gateway") return hasGateway;
       return (
-        connectedProviders.includes(model.provider) || hasServerLlmKey
+        connectedProviders.includes(model.provider) || hasServerByok
       );
     },
-    [connectedProviders, hasServerLlmKey],
+    [connectedProviders, hasGateway, hasServerByok],
   );
 
   const transport = useMemo(
@@ -199,7 +209,7 @@ export function ChatContainer({
   const isLoading = status === "streaming" || status === "submitted";
   const canChat =
     verified &&
-    (hasServerLlmKey || connectedProviders.length > 0) &&
+    (hasGateway || hasServerByok || connectedProviders.length > 0) &&
     canUseModel(modelId);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -236,7 +246,8 @@ export function ChatContainer({
         modelId={modelId}
         onModelChange={setModelId}
         memWalLive={memWalLive}
-        hasServerLlmKey={hasServerLlmKey}
+        hasGateway={hasGateway}
+        hasServerByok={hasServerByok}
         connectedProviders={connectedProviders}
         onOpenSettings={() => setSettingsOpen(true)}
       />
@@ -244,7 +255,8 @@ export function ChatContainer({
       <LlmSettingsModal
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}
-        hasServerKey={hasServerLlmKey}
+        hasGateway={hasGateway}
+        hasServerKey={hasServerByok}
         onKeysChange={handleProvidersChange}
       />
 
@@ -295,21 +307,21 @@ export function ChatContainer({
                 {verifying ? "Signing wallet…" : "Verifying wallet signature…"}
               </p>
             )}
-            {verified &&
-              !hasServerLlmKey &&
-              connectedProviders.length === 0 && (
-                <p className="mb-2 text-xs text-gold">
-                  Open{" "}
-                  <button
-                    type="button"
-                    onClick={() => setSettingsOpen(true)}
-                    className="font-semibold text-pitch underline hover:text-gold"
-                  >
-                    Settings
-                  </button>{" "}
-                  to connect Claude, ChatGPT, or Gemini.
-                </p>
-              )}
+            {verified && !hasGateway && !hasServerByok && connectedProviders.length === 0 && (
+              <p className="mb-2 text-xs text-gold">
+                Local dev: set{" "}
+                <code className="text-foreground/70">AI_GATEWAY_API_KEY</code> or
+                open{" "}
+                <button
+                  type="button"
+                  onClick={() => setSettingsOpen(true)}
+                  className="font-semibold text-pitch underline hover:text-gold"
+                >
+                  Advanced
+                </button>{" "}
+                to paste your own API key.
+              </p>
+            )}
             <div className="flex gap-2">
               <input
                 value={input}
@@ -318,7 +330,7 @@ export function ChatContainer({
                   canChat
                     ? "Declare your team, predict a score, or cope…"
                     : verified
-                      ? "Open Settings to connect an LLM…"
+                      ? "Waiting for LLM backend…"
                       : "Waiting for wallet verification…"
                 }
                 disabled={!canChat || isLoading}

@@ -78,12 +78,11 @@ export async function POST(req: Request) {
       getModelById(modelId ?? DEFAULT_MODEL_ID) ?? CHAT_MODELS[0]!;
 
     if (!hasProviderKey(selectedModel.provider, userKeys)) {
-      return NextResponse.json(
-        {
-          error: `No API key for ${selectedModel.label}. Open Settings → connect ${selectedModel.provider} and paste a valid API key.`,
-        },
-        { status: 401 },
-      );
+      const hint =
+        selectedModel.provider === "gateway"
+          ? "Claude Haiku (free) requires Vercel production or AI_GATEWAY_API_KEY on the server."
+          : `No API key for ${selectedModel.label}. Open Advanced → paste a ${selectedModel.provider} key, or switch to Claude Haiku (free).`;
+      return NextResponse.json({ error: hint }, { status: 401 });
     }
 
     const lastUserText = getLastUserText(messages);
@@ -99,11 +98,7 @@ export async function POST(req: Request) {
     const syncResult = await syncPendingPredictions(walletAddress);
     let profile = syncResult.profile;
 
-    const intent = await detectIntent(
-      lastUserText,
-      userKeys,
-      selectedModel.id,
-    );
+    const intent = await detectIntent(lastUserText, userKeys);
 
     if (intent.intent === "set_team" && intent.favorite_team) {
       profile = await setFavoriteTeam(

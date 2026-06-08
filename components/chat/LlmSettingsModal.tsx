@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { LLM_PROVIDERS, type LlmProvider } from "@/lib/ai/models";
+
+type ByokProvider = Exclude<LlmProvider, "gateway">;
 import {
   clearStoredProviderKey,
   getStoredLlmKeys,
@@ -14,17 +16,19 @@ import {
 export function LlmSettingsModal({
   open,
   onClose,
+  hasGateway,
   hasServerKey,
   onKeysChange,
 }: {
   open: boolean;
   onClose: () => void;
+  hasGateway: boolean;
   hasServerKey: boolean;
-  onKeysChange: (connected: LlmProvider[]) => void;
+  onKeysChange: (connected: ByokProvider[]) => void;
 }) {
-  const [activeTab, setActiveTab] = useState<LlmProvider>("openai");
-  const [drafts, setDrafts] = useState<Partial<Record<LlmProvider, string>>>({});
-  const [connected, setConnected] = useState<LlmProvider[]>([]);
+  const [activeTab, setActiveTab] = useState<ByokProvider>("openai");
+  const [drafts, setDrafts] = useState<Partial<Record<ByokProvider, string>>>({});
+  const [connected, setConnected] = useState<ByokProvider[]>([]);
 
   const refresh = useCallback(() => {
     const keys = getStoredLlmKeys();
@@ -71,10 +75,12 @@ export function LlmSettingsModal({
 
   const statusLabel =
     connected.length > 0
-      ? `Connected: ${connected.map((id) => LLM_PROVIDERS.find((p) => p.id === id)?.name).join(", ")}`
-      : hasServerKey
-        ? "Server demo key active — you can chat without pasting a key"
-        : "No LLM connected yet";
+      ? `BYOK: ${connected.map((id) => LLM_PROVIDERS.find((p) => p.id === id)?.name).join(", ")}`
+      : hasGateway
+        ? "Claude Haiku (free) active — wallet only"
+        : hasServerKey
+          ? "Server demo key active"
+          : "No LLM backend — set AI_GATEWAY_API_KEY or paste a key";
 
   return (
     <div
@@ -103,7 +109,7 @@ export function LlmSettingsModal({
               id="llm-settings-title"
               className="font-display text-2xl tracking-wide text-gold"
             >
-              LLM Connection
+              Advanced — BYOK
             </h2>
           </div>
           <button
@@ -116,23 +122,29 @@ export function LlmSettingsModal({
           </button>
         </div>
 
-        <p className="mb-4 text-sm text-foreground/70">
-          Paste an API key for the provider you want. After saving, the model
-          dropdown switches automatically (e.g. ChatGPT key → ChatGPT model).
-          Keys stay in this browser tab only (sessionStorage).
-        </p>
-        <p className="mb-4 rounded-lg border border-pitch/30 bg-pitch/5 px-3 py-2 text-xs text-foreground/60">
-          <strong className="text-pitch">Free demo tip:</strong> Gemini key from{" "}
-          <a
-            href="https://aistudio.google.com/apikey"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gold underline"
-          >
-            Google AI Studio
-          </a>{" "}
-          is free and works on production. Ollama is local-only (not on Vercel).
-        </p>
+        {hasGateway ? (
+          <p className="mb-4 rounded-lg border border-pitch/30 bg-pitch/5 px-3 py-2 text-xs text-foreground/70">
+            <strong className="text-pitch">No key needed.</strong> Production uses{" "}
+            <strong>Claude Haiku 4.5</strong> free via{" "}
+            <a
+              href="https://vercel.com/docs/ai-gateway"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gold underline"
+            >
+              Vercel AI Gateway
+            </a>{" "}
+            — connect wallet and chat. Paste keys below only if you want a
+            different model (ChatGPT, Gemini, Claude Sonnet).
+          </p>
+        ) : (
+          <p className="mb-4 text-sm text-foreground/70">
+            Optional: paste your own API key for ChatGPT, Gemini, or Claude.
+            For local dev without keys, set{" "}
+            <code className="text-foreground/80">AI_GATEWAY_API_KEY</code> in{" "}
+            <code className="text-foreground/80">.env.local</code>.
+          </p>
+        )}
 
         <div className="mb-4 flex gap-1">
           {LLM_PROVIDERS.map((p) => (
@@ -171,27 +183,7 @@ export function LlmSettingsModal({
           </a>
         </div>
 
-        {activeTab === "google" ? (
-          <ol className="mb-3 list-decimal space-y-1 pl-4 text-xs text-foreground/60">
-            <li>
-              Open{" "}
-              <a
-                href="https://aistudio.google.com/apikey"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gold underline"
-              >
-                Google AI Studio
-              </a>{" "}
-              and sign in with Google
-            </li>
-            <li>Click <strong>Create API key</strong> (choose or create a project)</li>
-            <li>Copy the key (<code className="text-foreground/80">AIza…</code>)</li>
-            <li>Paste below → <strong>Save key</strong> → model switches to Gemini</li>
-          </ol>
-        ) : (
-          <p className="mb-2 text-xs text-foreground/50">{provider.keyHint}</p>
-        )}
+        <p className="mb-2 text-xs text-foreground/50">{provider.keyHint}</p>
 
         <input
           type="password"

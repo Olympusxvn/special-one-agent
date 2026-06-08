@@ -2,7 +2,7 @@
 export function formatChatError(error: Error): string {
   const raw = error.message?.trim();
   if (!raw) {
-    return "LLM request failed. Check your API key in Settings or try another model.";
+    return "LLM request failed. Try again or switch to Claude Haiku (free) in the model dropdown.";
   }
 
   try {
@@ -16,8 +16,8 @@ export function formatChatError(error: Error): string {
     return "Invalid API key. Open Settings and paste a fresh key from your provider.";
   }
 
-  if (/insufficient_quota|billing|exceeded/i.test(raw)) {
-    return "API quota or billing issue on your LLM account. Check your provider dashboard.";
+  if (/insufficient_quota|billing|exceeded|rate_limit/i.test(raw)) {
+    return "LLM quota or rate limit hit. Switch to Claude Haiku (free) in the dropdown, or try again later.";
   }
 
   return raw.length > 280 ? `${raw.slice(0, 280)}…` : raw;

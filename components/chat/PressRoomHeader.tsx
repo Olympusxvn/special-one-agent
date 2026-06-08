@@ -7,12 +7,15 @@ import { MemWalStatus } from "./MemWalStatus";
 import { ModelSelector } from "./ModelSelector";
 import { ToxicityMeter } from "./ToxicityMeter";
 
+type ByokProvider = Exclude<LlmProvider, "gateway">;
+
 export function PressRoomHeader({
   toxicityLevel,
   modelId,
   onModelChange,
   memWalLive,
-  hasServerLlmKey,
+  hasGateway,
+  hasServerByok,
   connectedProviders,
   onOpenSettings,
 }: {
@@ -20,12 +23,11 @@ export function PressRoomHeader({
   modelId: string;
   onModelChange: (id: string) => void;
   memWalLive: boolean;
-  hasServerLlmKey: boolean;
-  connectedProviders: LlmProvider[];
+  hasGateway: boolean;
+  hasServerByok: boolean;
+  connectedProviders: ByokProvider[];
   onOpenSettings: () => void;
 }) {
-  const llmReady = hasServerLlmKey || connectedProviders.length > 0;
-
   return (
     <>
       <div className="pitch-accent-bar" />
@@ -52,22 +54,25 @@ export function PressRoomHeader({
               type="button"
               onClick={onOpenSettings}
               className="shrink-0 rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground transition hover:border-gold/50"
-              aria-label="Open settings"
+              aria-label="Open advanced LLM settings"
             >
-              ⚙️ Settings
-              {!llmReady ? (
-                <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-roast" />
-              ) : null}
+              ⚙️ Advanced
             </button>
             <ModelSelector
               value={modelId}
               onChange={onModelChange}
               connectedProviders={connectedProviders}
-              hasServerKey={hasServerLlmKey}
+              hasGateway={hasGateway}
+              hasServerByok={hasServerByok}
             />
             <WalletButton />
           </div>
         </div>
+        {hasGateway && (
+          <p className="mx-auto mt-2 max-w-6xl text-center text-[10px] text-foreground/45">
+            Claude Haiku 4.5 free via Vercel AI Gateway — connect wallet only, no API key
+          </p>
+        )}
       </header>
     </>
   );

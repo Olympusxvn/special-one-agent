@@ -2,22 +2,29 @@
 
 import { CHAT_MODELS, type LlmProvider } from "@/lib/ai/models";
 
+type ByokProvider = Exclude<LlmProvider, "gateway">;
+
 export function ModelSelector({
   value,
   onChange,
   connectedProviders,
-  hasServerKey,
+  hasGateway,
+  hasServerByok,
 }: {
   value: string;
   onChange: (id: string) => void;
-  connectedProviders: LlmProvider[];
-  /** Server operator demo keys (e.g. OpenRouter on Vercel) */
-  hasServerKey: boolean;
+  connectedProviders: ByokProvider[];
+  hasGateway: boolean;
+  /** Server operator BYOK env keys (not gateway) */
+  hasServerByok: boolean;
 }) {
-  const canUse = (provider: LlmProvider) =>
-    connectedProviders.includes(provider) || hasServerKey;
+  const canUse = (provider: LlmProvider) => {
+    if (provider === "gateway") return hasGateway;
+    return connectedProviders.includes(provider) || hasServerByok;
+  };
 
-  const anyAvailable = hasServerKey || connectedProviders.length > 0;
+  const anyAvailable =
+    hasGateway || hasServerByok || connectedProviders.length > 0;
 
   return (
     <select
@@ -26,7 +33,7 @@ export function ModelSelector({
       disabled={!anyAvailable}
       title={
         !anyAvailable
-          ? "Open Settings and connect Claude, ChatGPT, or Gemini"
+          ? "Connect wallet — Claude Haiku is free on production"
           : undefined
       }
       className="rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground focus:border-gold focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
@@ -37,7 +44,8 @@ export function ModelSelector({
         return (
           <option key={m.id} value={m.id} disabled={!available}>
             {m.label}
-            {!available ? " (connect first)" : ""}
+            {m.provider === "gateway" && hasGateway ? " (free)" : ""}
+            {!available ? " (BYOK)" : ""}
           </option>
         );
       })}

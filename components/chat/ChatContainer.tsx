@@ -18,6 +18,11 @@ import { computeToxicityLevel } from "@/lib/memory/toxicity";
 import type { FanMemory } from "@/lib/memory/types";
 import { emptyFanMemory } from "@/lib/memory/types";
 import { getStoredLlmKeys } from "@/lib/storage/llm-keys";
+import {
+  clearStoredWalletAuth,
+  getStoredWalletAuth,
+  setStoredWalletAuth,
+} from "@/lib/storage/wallet-auth";
 
 import { LlmSettingsModal } from "./LlmSettingsModal";
 import { MessageBubble } from "./MessageBubble";
@@ -78,6 +83,7 @@ export function ChatContainer({
         },
         prepareSendMessagesRequest: ({ body }) => {
           const keys = getStoredLlmKeys();
+          const auth = getStoredWalletAuth();
           return {
             body: {
               ...body,
@@ -87,6 +93,12 @@ export function ChatContainer({
                 ...(keys.google ? { google: keys.google } : {}),
                 ...(keys.openrouter ? { openrouter: keys.openrouter } : {}),
               },
+              ...(auth?.message && auth.signature
+                ? {
+                    authMessage: auth.message,
+                    authSignature: auth.signature,
+                  }
+                : {}),
             },
           };
         },
@@ -113,27 +125,57 @@ export function ChatContainer({
           signature,
         }),
       });
-      if (res.ok) setVerified(true);
+      if (res.ok) {
+        setStoredWalletAuth({
+          walletAddress: account.address,
+          message,
+          signature,
+        });
+        setVerified(true);
+      } else {
+        setVerified(false);
+        clearStoredWalletAuth();
+      }
+    } catch {
+      setVerified(false);
+      clearStoredWalletAuth();
     } finally {
       setVerifying(false);
     }
   }, [account?.address, signPersonalMessage]);
 
   useEffect(() => {
-    setVerified(false);
-    if (account?.address) {
-      void verifyWallet();
+    if (!account?.address) {
+      setVerified(false);
+      return;
     }
+
+    const stored = getStoredWalletAuth();
+    if (
+      stored?.walletAddress.toLowerCase() === account.address.toLowerCase()
+    ) {
+      setVerified(true);
+      return;
+    }
+
+    clearStoredWalletAuth();
+    setVerified(false);
+    void verifyWallet();
   }, [account?.address, verifyWallet]);
 
   const handleSync = async () => {
     if (!account?.address) return;
     setSyncing(true);
     try {
+      const auth = getStoredWalletAuth();
       const res = await fetch("/api/matches/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: account.address }),
+        body: JSON.stringify({
+          walletAddress: account.address,
+          authMessage: auth?.message,
+          authSignature: auth?.signature,
+        }),
       });
       if (res.ok) {
         const data = (await res.json()) as { profile: FanMemory };

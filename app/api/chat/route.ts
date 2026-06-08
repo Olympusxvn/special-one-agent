@@ -9,7 +9,7 @@ import {
   hasAnyLlmKey,
   type UserLlmKeys,
 } from "@/lib/ai/providers";
-import { isWalletVerified } from "@/lib/auth/verify-wallet";
+import { assertWalletAuth } from "@/lib/auth/verify-wallet";
 import { syncPendingPredictions } from "@/lib/football/sync-predictions";
 import {
   addPrediction,
@@ -55,12 +55,21 @@ export async function POST(req: Request) {
     walletAddress?: string;
     modelId?: string;
     llmKeys?: UserLlmKeys;
+    authMessage?: string;
+    authSignature?: string;
     /** @deprecated use llmKeys */
     openRouterApiKey?: string;
   };
 
-  const { messages = [], walletAddress, modelId, llmKeys, openRouterApiKey } =
-    body;
+  const {
+    messages = [],
+    walletAddress,
+    modelId,
+    llmKeys,
+    authMessage,
+    authSignature,
+    openRouterApiKey,
+  } = body;
 
   const userKeys: UserLlmKeys = {
     ...llmKeys,
@@ -71,8 +80,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "walletAddress required" }, { status: 400 });
   }
 
-  if (!isWalletVerified(walletAddress)) {
-    return NextResponse.json({ error: "Wallet not verified" }, { status: 401 });
+  const auth = await assertWalletAuth(
+    walletAddress,
+    authMessage,
+    authSignature,
+  );
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
   if (!hasAnyLlmKey(userKeys)) {

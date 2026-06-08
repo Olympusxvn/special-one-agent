@@ -40,22 +40,35 @@ export function isWalletVerified(walletAddress: string): boolean {
   return true;
 }
 
-export function requireVerifiedWallet(
+/** Stateless auth for serverless — verify signature on every request when provided. */
+export async function assertWalletAuth(
   walletAddress: string,
-  signature?: string,
   message?: string,
-): { ok: true } | { ok: false; error: string } {
+  signature?: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!walletAddress?.trim()) {
     return { ok: false, error: "Wallet address required" };
+  }
+
+  if (message?.trim() && signature?.trim()) {
+    const valid = await verifyWalletSignature(
+      walletAddress,
+      message,
+      signature,
+    );
+    if (valid) {
+      markWalletVerified(walletAddress);
+      return { ok: true };
+    }
+    return { ok: false, error: "Invalid wallet signature" };
   }
 
   if (isWalletVerified(walletAddress)) {
     return { ok: true };
   }
 
-  if (signature && message) {
-    return { ok: false, error: "Signature not yet verified — call /api/auth/verify first" };
-  }
-
-  return { ok: false, error: "Wallet not verified. Sign the auth message first." };
+  return {
+    ok: false,
+    error: "Wallet not verified. Sign the auth message in the app first.",
+  };
 }

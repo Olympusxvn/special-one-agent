@@ -5,24 +5,29 @@ import { useCurrentAccount, useSignPersonalMessage } from "@mysten/dapp-kit";
 import { DefaultChatTransport } from "ai";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { DEFAULT_MODEL_ID } from "@/lib/ai/models";
+import { WorldCupWatermark } from "@/components/world-cup/WorldCupWatermark";
+import {
+  CHAT_MODELS,
+  DEFAULT_MODEL_ID,
+  getModelById,
+  type LlmProvider,
+} from "@/lib/ai/models";
 import { buildAuthMessage } from "@/lib/auth/messages";
-import { getStoredOpenRouterKey } from "@/lib/storage/openrouter-key";
-import type { FanMemory } from "@/lib/memory/types";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
+import type { FanMemory } from "@/lib/memory/types";
 import { emptyFanMemory } from "@/lib/memory/types";
+import { getStoredLlmKeys } from "@/lib/storage/llm-keys";
 
 import { MessageBubble } from "./MessageBubble";
 import { PredictionCard } from "./PredictionCard";
 import { PressRoomHeader } from "./PressRoomHeader";
-import { WorldCupWatermark } from "@/components/world-cup/WorldCupWatermark";
 
 export function ChatContainer({
   memWalLive,
-  hasServerOpenRouterKey,
+  hasServerLlmKey,
 }: {
   memWalLive: boolean;
-  hasServerOpenRouterKey: boolean;
+  hasServerLlmKey: boolean;
 }) {
   const account = useCurrentAccount();
   const { mutateAsync: signPersonalMessage } = useSignPersonalMessage();
@@ -32,9 +37,26 @@ export function ChatContainer({
   const [profile, setProfile] = useState<FanMemory | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [input, setInput] = useState("");
-  const [userOpenRouterKey, setUserOpenRouterKey] = useState<string | null>(null);
+  const [connectedProviders, setConnectedProviders] = useState<LlmProvider[]>(
+    [],
+  );
 
-  const hasAnyOpenRouterKey = Boolean(userOpenRouterKey || hasServerOpenRouterKey);
+  const canUseModel = useCallback(
+    (id: string) => {
+      const model = getModelById(id);
+      if (!model) return false;
+      return (
+        connectedProviders.includes(model.provider) || hasServerLlmKey
+      );
+    },
+    [connectedProviders, hasServerLlmKey],
+  );
+
+  useEffect(() => {
+    if (canUseModel(modelId)) return;
+    const fallback = CHAT_MODELS.find((m) => canUseModel(m.id));
+    if (fallback) setModelId(fallback.id);
+  }, [modelId, canUseModel]);
 
   const transport = useMemo(
     () =>
@@ -45,11 +67,16 @@ export function ChatContainer({
           modelId,
         },
         prepareSendMessagesRequest: ({ body }) => {
-          const storedKey = getStoredOpenRouterKey();
+          const keys = getStoredLlmKeys();
           return {
             body: {
               ...body,
-              ...(storedKey ? { openRouterApiKey: storedKey } : {}),
+              llmKeys: {
+                ...(keys.anthropic ? { anthropic: keys.anthropic } : {}),
+                ...(keys.openai ? { openai: keys.openai } : {}),
+                ...(keys.google ? { google: keys.google } : {}),
+                ...(keys.openrouter ? { openrouter: keys.openrouter } : {}),
+              },
             },
           };
         },
@@ -109,10 +136,14 @@ export function ChatContainer({
 
   const toxicityLevel = computeToxicityLevel(profile ?? emptyFanMemory());
   const isLoading = status === "streaming" || status === "submitted";
+  const canChat =
+    verified &&
+    (hasServerLlmKey || connectedProviders.length > 0) &&
+    canUseModel(modelId);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !verified) return;
+    if (!input.trim() || !canChat) return;
     void sendMessage({ text: input.trim() });
     setInput("");
   };
@@ -144,9 +175,9 @@ export function ChatContainer({
         modelId={modelId}
         onModelChange={setModelId}
         memWalLive={memWalLive}
-        hasServerOpenRouterKey={hasServerOpenRouterKey}
-        modelSelectorDisabled={!hasAnyOpenRouterKey}
-        onOpenRouterKeyChange={setUserOpenRouterKey}
+        hasServerLlmKey={hasServerLlmKey}
+        connectedProviders={connectedProviders}
+        onConnectedProvidersChange={setConnectedProviders}
       />
 
       <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[1fr_280px]">
@@ -196,21 +227,31 @@ export function ChatContainer({
                 {verifying ? "Signing wallet…" : "Verifying wallet signature…"}
               </p>
             )}
+            {verified &&
+              !hasServerLlmKey &&
+              connectedProviders.length === 0 && (
+                <p className="mb-2 text-xs text-gold">
+                  Connect Claude, ChatGPT, or Gemini (🔑 Connect LLM) to start
+                  roasting.
+                </p>
+              )}
             <div className="flex gap-2">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
-                  verified
+                  canChat
                     ? "Declare your team, predict a score, or cope…"
-                    : "Waiting for wallet verification…"
+                    : verified
+                      ? "Connect an LLM account first…"
+                      : "Waiting for wallet verification…"
                 }
-                disabled={!verified || isLoading}
-                className="flex-1 rounded-xl border border-press-border bg-midnight/60 px-4 py-3 text-sm text-foreground placeholder:text-foreground/40 focus:border-pitch focus:outline-none focus:ring-1 focus:ring-pitch/30 disabled:opacity-50"
+                disabled={!canChat || isLoading}
+                className="chat-input flex-1 rounded-xl px-4 py-3 text-sm disabled:opacity-50"
               />
               <button
                 type="submit"
-                disabled={!verified || isLoading || !input.trim()}
+                disabled={!canChat || isLoading || !input.trim()}
                 className="btn-festive rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-50"
               >
                 Send

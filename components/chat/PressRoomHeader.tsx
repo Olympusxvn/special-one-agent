@@ -1,9 +1,11 @@
+import type { LlmProvider } from "@/lib/ai/models";
+
 import { WalletButton } from "@/components/wallet/WalletButton";
 import { WorldCupLogo } from "@/components/world-cup/WorldCupLogo";
 import { WorldCupStripe } from "@/components/world-cup/WorldCupStripe";
 import { MemWalStatus } from "./MemWalStatus";
 import { ModelSelector } from "./ModelSelector";
-import { OpenRouterConnect } from "./OpenRouterConnect";
+import { LlmProviderConnect } from "./LlmProviderConnect";
 import { ToxicityMeter } from "./ToxicityMeter";
 
 export function PressRoomHeader({
@@ -11,17 +13,17 @@ export function PressRoomHeader({
   modelId,
   onModelChange,
   memWalLive,
-  hasServerOpenRouterKey,
-  modelSelectorDisabled,
-  onOpenRouterKeyChange,
+  hasServerLlmKey,
+  connectedProviders,
+  onConnectedProvidersChange,
 }: {
   toxicityLevel: number;
   modelId: string;
   onModelChange: (id: string) => void;
   memWalLive: boolean;
-  hasServerOpenRouterKey: boolean;
-  modelSelectorDisabled: boolean;
-  onOpenRouterKeyChange: (key: string | null) => void;
+  hasServerLlmKey: boolean;
+  connectedProviders: LlmProvider[];
+  onConnectedProvidersChange: (providers: LlmProvider[]) => void;
 }) {
   return (
     <>
@@ -45,14 +47,15 @@ export function PressRoomHeader({
           </div>
           <div className="flex flex-wrap items-center gap-4">
             <ToxicityMeter level={toxicityLevel} />
-            <OpenRouterConnect
-              hasServerKey={hasServerOpenRouterKey}
-              onKeyChange={onOpenRouterKeyChange}
+            <LlmProviderConnect
+              hasServerKey={hasServerLlmKey}
+              onKeysChange={onConnectedProvidersChange}
             />
             <ModelSelector
               value={modelId}
               onChange={onModelChange}
-              disabled={modelSelectorDisabled}
+              connectedProviders={connectedProviders}
+              hasServerKey={hasServerLlmKey}
             />
             <WalletButton />
           </div>

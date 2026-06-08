@@ -252,6 +252,33 @@ body {
   }
 }
 
+/* Chat + LLM key inputs — force readable text on dark background */
+.chat-input {
+  border: 1px solid var(--press-border);
+  background-color: var(--press-card);
+  color: var(--foreground);
+  caret-color: var(--pitch);
+  color-scheme: dark;
+}
+
+.chat-input::placeholder {
+  color: rgba(240, 244, 248, 0.45);
+}
+
+.chat-input:focus {
+  border-color: var(--pitch);
+  outline: none;
+  box-shadow: 0 0 0 1px rgba(0, 200, 83, 0.35);
+}
+
+.chat-input:-webkit-autofill,
+.chat-input:-webkit-autofill:hover,
+.chat-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--foreground) !important;
+  box-shadow: 0 0 0 1000px var(--press-card) inset !important;
+  caret-color: var(--pitch);
+}
+
 @keyframes confetti-float {
   0%,
   100% {

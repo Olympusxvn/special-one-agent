@@ -6,8 +6,8 @@ import { detectIntent, extractRoastTopics } from "@/lib/ai/intent";
 import { DEFAULT_MODEL_ID } from "@/lib/ai/models";
 import {
   getChatModel,
-  hasOpenRouterKey,
-  resolveOpenRouterApiKey,
+  hasAnyLlmKey,
+  type UserLlmKeys,
 } from "@/lib/ai/providers";
 import { isWalletVerified } from "@/lib/auth/verify-wallet";
 import { syncPendingPredictions } from "@/lib/football/sync-predictions";
@@ -54,10 +54,18 @@ export async function POST(req: Request) {
     messages?: UIMessage[];
     walletAddress?: string;
     modelId?: string;
+    llmKeys?: UserLlmKeys;
+    /** @deprecated use llmKeys */
     openRouterApiKey?: string;
   };
 
-  const { messages = [], walletAddress, modelId, openRouterApiKey } = body;
+  const { messages = [], walletAddress, modelId, llmKeys, openRouterApiKey } =
+    body;
+
+  const userKeys: UserLlmKeys = {
+    ...llmKeys,
+    ...(openRouterApiKey ? { openrouter: openRouterApiKey } : {}),
+  };
 
   if (!walletAddress?.trim()) {
     return NextResponse.json({ error: "walletAddress required" }, { status: 400 });
@@ -67,13 +75,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Wallet not verified" }, { status: 401 });
   }
 
-  const apiKey = resolveOpenRouterApiKey(openRouterApiKey);
-
-  if (!hasOpenRouterKey(apiKey)) {
+  if (!hasAnyLlmKey(userKeys)) {
     return NextResponse.json(
       {
         error:
-          "No OpenRouter API key available. Connect your key in the header panel or ask the operator to set OPENROUTER_API_KEY for demo mode.",
+          "No LLM API key available. Connect Claude, ChatGPT, or Gemini in the header, or ask the operator to set server keys for demo mode.",
       },
       { status: 401 },
     );
@@ -87,7 +93,7 @@ export async function POST(req: Request) {
   const syncResult = await syncPendingPredictions(walletAddress);
   let profile = syncResult.profile;
 
-  const intent = await detectIntent(lastUserText, apiKey);
+  const intent = await detectIntent(lastUserText, userKeys);
 
   if (intent.intent === "set_team" && intent.favorite_team) {
     profile = await setFavoriteTeam(walletAddress, intent.favorite_team, profile);
@@ -127,7 +133,7 @@ export async function POST(req: Request) {
   });
 
   const result = streamText({
-    model: getChatModel(modelId ?? DEFAULT_MODEL_ID, apiKey),
+    model: getChatModel(modelId ?? DEFAULT_MODEL_ID, userKeys),
     system,
     messages: toModelMessages(messages),
     temperature: 0.85,

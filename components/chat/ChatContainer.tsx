@@ -63,7 +63,9 @@ export function ChatContainer({
     return pickModelForProviders(connected, buildLlmOptions(connected, serverLlm));
   });
   const [profile, setProfile] = useState<FanMemory | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const prevChatStatus = useRef<string>("ready");
   const [input, setInput] = useState("");
   const [connectedProviders, setConnectedProviders] = useState<LlmProvider[]>(
     [],
@@ -147,6 +149,31 @@ export function ChatContainer({
 
   const { messages, sendMessage, status, error } = useChat({ transport });
 
+  const fetchProfile = useCallback(async () => {
+    if (!account?.address) return;
+    const auth = getStoredWalletAuth();
+    if (!auth?.message || !auth.signature) return;
+
+    setProfileLoading(true);
+    try {
+      const res = await fetch("/api/memory/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: account.address,
+          authMessage: auth.message,
+          authSignature: auth.signature,
+        }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { profile: FanMemory };
+        setProfile(data.profile);
+      }
+    } finally {
+      setProfileLoading(false);
+    }
+  }, [account?.address]);
+
   const verifyWallet = useCallback(async () => {
     if (!account?.address) return;
     setVerifying(true);
@@ -201,6 +228,27 @@ export function ChatContainer({
     setVerified(false);
     void verifyWallet();
   }, [account?.address, verifyWallet]);
+
+  useEffect(() => {
+    if (verified && account?.address) {
+      void fetchProfile();
+    } else {
+      setProfile(null);
+    }
+  }, [verified, account?.address, fetchProfile]);
+
+  useEffect(() => {
+    const wasStreaming =
+      prevChatStatus.current === "streaming" ||
+      prevChatStatus.current === "submitted";
+    if (wasStreaming && status === "ready") {
+      void fetchProfile();
+      const retry = setTimeout(() => void fetchProfile(), 1500);
+      prevChatStatus.current = status;
+      return () => clearTimeout(retry);
+    }
+    prevChatStatus.current = status;
+  }, [status, fetchProfile]);
 
   const handleSync = async () => {
     if (!account?.address) return;
@@ -378,7 +426,14 @@ export function ChatContainer({
           </form>
         </div>
 
-        <PredictionCard profile={profile} onSync={handleSync} syncing={syncing} />
+        <PredictionCard
+          profile={profile}
+          profileLoading={profileLoading}
+          memWalLive={memWalLive}
+          walletAddress={account.address}
+          onSync={handleSync}
+          syncing={syncing}
+        />
       </div>
     </div>
   );

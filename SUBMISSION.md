@@ -23,6 +23,51 @@ A World Cup 2026 roast-bot that remembers every bad take you make — per Sui wa
 
 ---
 
+## Submission requirements (official → our project)
+
+Mapping from Walrus Sessions 4 requirements to what judges can verify live.
+
+### 1. Public interface — memory visible and meaningful
+
+| Requirement | How we satisfy it | Where to look |
+|-------------|-------------------|---------------|
+| Publicly accessible site | Production press room, no repo clone needed | [special-one-agent.vercel.app/chat](https://special-one-agent.vercel.app/chat) |
+| Prediction history | **Walrus Memory Ledger** sidebar — open + **resolved** predictions with PENDING / CORRECT / WRONG badges | Right column after wallet connect |
+| Roast of user's record | Streaming chat references recalled Walrus lines + profile state | Main chat thread |
+| Memory updates in UI | Ledger + toxicity meter refresh after each chat turn (`/api/memory/profile`) | Send a prediction → sidebar updates |
+| On-chain proof | MemWal 🟢 LIVE + explorer link | Press room header |
+
+**Judge walkthrough (60s):** Connect wallet → Settings → Gemini key → *"I support Brazil, high confidence"* → see **Team: Brazil** in ledger → *"I predict Brazil 3-0 Argentina"* → **Open predictions** → *"Argentina beat Brazil 1-0"* → **Resolved history** shows WRONG → toxicity meter rises → roast callbacks in chat.
+
+### 2. Walrus Mainnet + dedicated Sessions wallet
+
+| Item | Value |
+|------|--------|
+| **Deploy** | Vercel production, MemWal mainnet relayer `https://relayer.memory.walrus.xyz` |
+| **MemWalAccount (object)** | `0x73b07979a6712f54283c02ddf70e2bdfb3ec729627c9ef0e0d8a214015066a99` |
+| **Explorer** | [SuiScan MemWalAccount](https://suiscan.xyz/mainnet/object/0x73b07979a6712f54283c02ddf70e2bdfb3ec729627c9ef0e0d8a214015066a99) |
+| **Per-user memory** | Namespace `special-one-{walletAddress.toLowerCase()}` on operator account |
+| **Sessions operator wallet** | Sui address used to create MemWalAccount on [memory.walrus.xyz/dashboard](https://memory.walrus.xyz/dashboard) — see object owner on SuiScan |
+
+Fans connect **their own** Sui wallet in the app; the **Sessions wallet** is the operator account that owns the MemWalAccount object.
+
+### 3. Live link + demo video (≤ 3 minutes)
+
+| Item | Status | URL / notes |
+|------|--------|-------------|
+| **Live project** | ✅ | [special-one-agent.vercel.app](https://special-one-agent.vercel.app) |
+| **Demo video** | ❌ TODO | Record per [PROJECT.md demo script](./PROJECT.md#demo-script-3-minutes) — include ledger + refresh + Memory Moment |
+
+### Core capabilities (≥ 1 required — we show 2)
+
+| Capability | Status | Evidence |
+|------------|--------|----------|
+| **Portable Memory** | ✅ | Same wallet after refresh → ledger reloads from Walrus |
+| **Long-Term Memory** | ✅ | Resolved history + toxicity escalation over sessions |
+| **Agent Coordination** | N/A | Single roast agent |
+
+---
+
 ## Walrus Memory usage (2–5 sentences)
 
 Mr. Toxic Special One stores each fan's team, predictions, flip-flops, and roast history in Walrus via MemWal, isolated per Sui wallet namespace (`special-one-{address.toLowerCase()}`). On each chat turn the server **recalls** up to two semantic memory lines in parallel with profile load and injects them into the roast prompt (80 chars each, 800ms cap). Structured state lives in `FAN_PROFILE_JSON`; semantic lines are written fire-and-forget with `remember()` — never blocking the stream.
@@ -61,6 +106,7 @@ These are **active in the deployed app** as of the current codebase:
 | **Sui wallet auth** | Signed `PersonalMessage` → proof in `sessionStorage` → sent with every API call; stateless verify on server |
 | **BYOK demo flow** | Settings modal — Gemini / ChatGPT / Claude API keys (`components/chat/LlmSettingsModal.tsx`); default **Gemini 2.0 Flash Lite** |
 | **Semantic recall on chat path** | `Promise.all` — `loadFanProfileFast` (500ms) + `recallMemories` (800ms, limit 2, warm-instance cache); injected as `mem:` in system prompt |
+| **Walrus Memory Ledger (judge UI)** | `PredictionCard` — open + resolved history, WRONG/CORRECT badges; `/api/memory/profile` refresh after each chat |
 
 ---
 
@@ -91,7 +137,7 @@ Full mitigation list: [CHANGELOG.md](./CHANGELOG.md) §9 (Lessons learned).
 3. Settings → paste free **Gemini** key → select **Gemini 2.0 Flash Lite**.
 4. Tap chip **🇧🇷 Brazil fan** or type: *"I support Brazil! High confidence!"*
 5. Tap **⚽ Predict score**: *"Mexico will beat South Africa 2-1"*
-6. Note toxicity meter + prediction sidebar. Roast is punchy (40-word cap) but team/prediction are saved to Walrus.
+6. Note **Walrus Memory Ledger** (right sidebar) + toxicity meter — team and open prediction appear after send. Roast is punchy (40-word cap) but state is saved to Walrus.
 
 **Capture:** Screenshot — first roast, prediction card, MemWal LIVE badge.
 
@@ -120,6 +166,8 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 | MemWalAccount explorer link | ✅ Done | [SuiScan object](https://suiscan.xyz/mainnet/object/0x73b07979a6712f54283c02ddf70e2bdfb3ec729627c9ef0e0d8a214015066a99) |
 | 2–5 sentence Walrus usage blurb | ✅ Done | Section above (+ trade-off note) |
 | Portable + Long-Term Memory showcase | ✅ Done | Per-wallet namespace, predictions/roasts over sessions |
+| Public memory-visible UI (prediction history) | ✅ Done | Walrus Memory Ledger — open + resolved predictions |
+| Profile sync after chat | ✅ Done | `POST /api/memory/profile` — ledger + toxicity refresh |
 | Memory Moment (Day 1 vs ≥4 days) | ❌ TODO | Script above — needs capture |
 | Demo video (<3 min) | ❌ TODO | Script in [PROJECT.md](./PROJECT.md#demo-script-3-minutes) |
 | Honest reflection | 🟡 Draft | [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) |
@@ -144,4 +192,4 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 
 ## Tóm tắt (VI)
 
-**Mr. Toxic Special One** — chatbot roast World Cup 2026, mỗi ví Sui có namespace Walrus `special-one-{address}`. Production: [special-one-agent.vercel.app](https://special-one-agent.vercel.app), MemWal mainnet + explorer link. Showcase **Portable Memory + Long-Term Memory** (2/3 năng lực cốt lõi); recall semantic đã bật lại song song (v0.3.0). Còn TODO: Memory Moment 4 ngày, video demo, submit DeepSurge/Airtable.
+**Mr. Toxic Special One** — chatbot roast World Cup 2026, mỗi ví Sui có namespace Walrus `special-one-{address}`. Production: [special-one-agent.vercel.app](https://special-one-agent.vercel.app). Sidebar **Walrus Memory Ledger** hiện prediction pending + resolved (WRONG/CORRECT) cho judges. Showcase Portable + Long-Term Memory. Còn TODO: video demo, Memory Moment 4 ngày, DeepSurge/Airtable.

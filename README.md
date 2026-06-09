@@ -87,6 +87,7 @@ special-one-agent/
 │   ├── schedules/page.tsx       Fixtures, results, RSS headlines
 │   └── api/
 │       ├── chat/route.ts        Streaming roast API
+│       ├── memory/profile/      Load fan profile from Walrus (ledger UI)
 │       ├── news/route.ts        Free RSS headlines
 │       ├── auth/verify/         Wallet signature verification
 │       └── matches/

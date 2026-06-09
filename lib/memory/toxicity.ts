@@ -1,9 +1,5 @@
+import { predictionsDiffer } from "./prediction-outcome";
 import type { FanMemory } from "./types";
-
-function predictionsDiffer(prediction: string, result: string): boolean {
-  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
-  return norm(prediction) !== norm(result);
-}
 
 export function computeToxicityLevel(profile: FanMemory): number {
   const wrongCount = profile.past_predictions.filter(

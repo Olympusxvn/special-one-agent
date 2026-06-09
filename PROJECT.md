@@ -22,48 +22,183 @@ Football fans talk big before the World Cup: bold predictions, team flip-flops, 
 | **Wallet identity** | Sui connect + signed message — no signup, one address = one memory namespace |
 | **Prediction tracking** | Saves pending calls; resolves via API-Football sync or manual score entry |
 | **Toxicity escalation** | Wrong predictions + flip-flops + high-confidence misses → hotter roasts |
-| **Streaming chat** | OpenRouter LLM with model picker; meme-stamp format every reply |
+| **Streaming chat** | BYOK LLM (Gemini / ChatGPT / Claude in Settings); short streaming roasts (~40 words) |
 | **Press-room UI** | Dark/gold theme, toxicity meter, prediction sidebar, MemWal live banner |
 
 ---
 
-## Architecture
+## Data Flow (for judges)
+
+**Production:** [special-one-agent.vercel.app](https://special-one-agent.vercel.app) · **MemWal namespace:** `special-one-{walletAddress}` (one Sui wallet = one isolated memory space on Walrus mainnet).
+
+### At a glance
+
+| Step | What happens | Walrus involved? |
+|------|----------------|------------------|
+| 1 | User connects Sui wallet + signs auth message | No |
+| 2 | User pastes LLM API key in Settings (stays in browser) | No |
+| 3 | User sends a chat message | **Read** — profile + semantic recall |
+| 4 | Bot streams a roast | No (LLM only) |
+| 5 | After stream ends | **Write** — profile + roast line saved to Walrus |
+| 6 | User refreshes days later, same wallet | **Read** — agent still has receipts |
+
+**Judge takeaway:** Every wallet gets its own Walrus memory. The bot **reads** memory before each roast and **writes** after — without blocking the stream.
+
+---
+
+### System overview
 
 ```mermaid
 flowchart TB
-    subgraph Browser["Browser (Next.js client)"]
-        WB[Sui Wallet / dapp-kit]
-        CC[ChatContainer / useChat]
-        WB --> CC
+    subgraph Browser["Browser — user device only"]
+        Wallet[Sui Wallet]
+        SS[(sessionStorage<br/>auth proof + API keys)]
+        Chat[Press Room /chat]
+        Wallet --> SS
+        SS --> Chat
     end
 
-    subgraph Server["Next.js App Router"]
+    subgraph Server["Vercel — Next.js server"]
         AUTH["/api/auth/verify"]
         CHAT["/api/chat"]
         SYNC["/api/matches/sync"]
-        FIX["/api/matches/fixtures"]
-        INTENT[Intent detection]
-        PROFILE[fan-profile.ts]
-        PROMPT[System prompt builder]
-        CHAT --> INTENT --> PROFILE --> PROMPT
     end
 
     subgraph External["External services"]
-        OR[OpenRouter LLM]
-        AF[API-Football WC 2026]
-        MW[MemWal Relayer / Walrus]
+        LLM[Gemini / ChatGPT / Claude API]
+        MW[MemWal Relayer → Walrus mainnet]
+        AF[API-Football optional]
     end
 
-    CC --> AUTH
-    CC --> CHAT
-    CC --> SYNC
-    CHAT --> OR
-    SYNC --> AF
-    PROFILE --> MW
+    Chat --> AUTH
+    Chat --> CHAT
+    Chat --> SYNC
+    CHAT --> LLM
     CHAT --> MW
+    SYNC --> AF
+    SYNC --> MW
 ```
 
-**Chat flow:** verify wallet → sync pending fixtures → detect intent → mutate fan profile → recall memories → build prompt → stream roast → persist to Walrus.
+**What never hits our server:** LLM API keys (browser `sessionStorage` only).  
+**What stays on server:** MemWal delegate key (`MEMWAL_*` env) — one operator account, many user namespaces.
+
+---
+
+### 1. Wallet auth (once per session)
+
+```mermaid
+sequenceDiagram
+    participant Judge as Judge / User
+    participant Wallet as Sui Wallet
+    participant Browser as Browser
+    participant API as /api/auth/verify
+
+    Judge->>Wallet: Connect + Sign message
+    Wallet->>Browser: message + signature
+    Browser->>Browser: Save to sessionStorage
+    Browser->>API: POST verify
+    API->>API: Verify Sui signature
+    API-->>Browser: OK
+
+    Note over Browser: Every chat message includes<br/>authMessage + authSignature in body
+```
+
+No traditional signup. The wallet address **is** the user ID and the MemWal namespace key.
+
+---
+
+### 2. One chat message — the hot path
+
+This is what happens when a judge taps a demo chip or types a message:
+
+```mermaid
+sequenceDiagram
+    participant Browser as Browser
+    participant API as /api/chat
+    participant MW as MemWal / Walrus
+    participant LLM as User's LLM API
+
+    Browser->>API: messages + wallet + API key + auth proof
+    API->>API: Verify wallet signature
+
+    par Parallel — separate timeouts
+        API->>MW: Load FAN_PROFILE_JSON (max 500ms)
+        API->>MW: Semantic recall from user text (max 800ms, 2 lines)
+    end
+    MW-->>API: Team, predictions, past roasts
+
+    API->>API: Detect intent (regex): team / prediction / result
+    API->>API: Update profile in memory + toxicity score
+    API->>API: Build prompt: fan + mem + tox
+    API->>LLM: streamText (short roast, ~70 tokens max)
+    LLM-->>Browser: Stream roast text
+
+    Note over API,MW: After stream finishes (background)
+    API->>MW: remember() profile + roast line (fire-and-forget)
+```
+
+**Numbered flow (easy to follow in a demo):**
+
+1. **Verify** — server checks the Sui signature on every request (serverless-safe).
+2. **Read Walrus (parallel)** — structured profile blob + up to 2 semantic memory lines (e.g. *"Prediction WRONG: said Brazil 3-0, actual 1-0"*).
+3. **Parse intent** — regex extracts team, prediction, or reported score from the user's message.
+4. **Build prompt** — compact fan state + recalled receipts + toxicity level (1–10).
+5. **Stream roast** — user's chosen LLM (default Gemini 2.0 Flash Lite); reply capped ~40 words for live-demo speed.
+6. **Write Walrus (async)** — save updated profile and roast line; does **not** delay the response.
+
+**Latency design (why it doesn't timeout on message 3):** profile load and semantic recall run **in parallel** with hard caps (500ms / 800ms). Writes use `remember()` without waiting — never `rememberAndWait()` before the stream.
+
+---
+
+### 3. What gets stored in Walrus
+
+```mermaid
+flowchart LR
+    subgraph PerWallet["Namespace: special-one-{wallet}"]
+        JSON["FAN_PROFILE_JSON<br/>team, predictions, flip-flops, roast history"]
+        SEM["Semantic lines<br/>flip-flop, PENDING/WRONG/CORRECT, roast delivered"]
+    end
+
+    READ["Read before roast"] --> JSON
+    READ --> SEM
+    WRITE["Write after intent / roast"] --> JSON
+    WRITE --> SEM
+```
+
+| Storage type | Example | When |
+|--------------|---------|------|
+| **Profile JSON** | `{ favorite_team: "Brazil", past_predictions: [...] }` | Loaded every turn; updated on intent |
+| **Semantic line** | `Flip-flop: switched from Brazil to Argentina` | Written on team change, prediction, result, roast |
+
+See [Memory Fields](#memory-fields) below for the full schema.
+
+---
+
+### 4. Prediction sync (optional — not on every chat turn)
+
+Fixture resolution is **user-triggered** (sidebar **Check my predictions**), not automatic on each message — keeps chat fast.
+
+```mermaid
+flowchart LR
+    User[User clicks sync] --> SYNC["/api/matches/sync"]
+    SYNC --> AF[API-Football]
+    SYNC --> MW[MemWal: mark predictions WRONG/CORRECT]
+```
+
+Manual score entry in chat (*"Argentina beat Brazil 1-0"*) also updates profile + Walrus via intent detection — no API-Football required for the demo.
+
+---
+
+### 5. What judges should look for (Memory Moment)
+
+| Demo moment | Walrus proof |
+|-------------|--------------|
+| Declare team + prediction | `remember()` lines appear in [MemWalAccount explorer](https://suiscan.xyz/mainnet/object/0x73b07979a6712f54283c02ddf70e2bdfb3ec729627c9ef0e0d8a214015066a99) |
+| Wrong call / flip-flop | Toxicity meter rises; roast references past line from **recall** |
+| Refresh browser, same wallet | Agent still knows team + predictions — **portable memory** |
+| Different wallet | Clean slate — **per-wallet isolation** |
+
+Press room header shows **MemWal 🟢 LIVE** when server MemWal env is configured.
 
 ---
 
@@ -73,7 +208,7 @@ flowchart TB
 |-------|------------|
 | Framework | Next.js 14 (App Router) |
 | UI | React 18, Tailwind CSS, `@mysten/dapp-kit` |
-| LLM | Vercel AI SDK + OpenRouter (user-selectable models) |
+| LLM | Vercel AI SDK + BYOK (Gemini / ChatGPT / Claude in Settings) |
 | Memory | `@mysten-incubation/memwal` — namespace `special-one-{wallet}` |
 | Identity | Sui wallet + `PersonalMessage` signature verification |
 | Football data | API-Football (league 1, season 2026) + manual result parsing |
@@ -115,7 +250,7 @@ Think Comedy Central Roast meets World Cup group-chat chaos — fun, not hostile
 
 ## Demo Script (~3 minutes)
 
-**Prep:** Set `OPENROUTER_API_KEY` + `MEMWAL_*`; connect a Sui wallet. `API_FOOTBALL_KEY` optional.
+**Prep:** Connect Sui wallet → Settings → paste free [Gemini API key](https://aistudio.google.com/apikey). Operator sets `MEMWAL_*` on server. `API_FOOTBALL_KEY` optional.
 
 | Time | Action | Show judges |
 |------|--------|-------------|
@@ -134,7 +269,7 @@ Think Comedy Central Roast meets World Cup group-chat chaos — fun, not hostile
 
 ## Walrus Sessions 4 — Submission Status
 
-→ **Submission packet:** [SUBMISSION.md](./SUBMISSION.md) · **MemWal feedback:** [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) · **Rules:** [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md)
+→ **Data flow (judges):** see [Data Flow (for judges)](#data-flow-for-judges) above · **Submission packet:** [SUBMISSION.md](./SUBMISSION.md) · **MemWal feedback:** [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) · **Rules:** [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md)
 
 | Submission item | Status |
 |-----------------|--------|

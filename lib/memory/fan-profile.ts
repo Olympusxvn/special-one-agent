@@ -84,7 +84,7 @@ function rememberSemantic(walletAddress: string, line: string): void {
 
 export async function loadFanProfileFast(
   walletAddress: string,
-  timeoutMs = 1200,
+  timeoutMs = 500,
 ): Promise<FanMemory> {
   const cached = profileCache.get(walletAddress);
   if (cached) return { ...cached };

@@ -20,11 +20,7 @@ import {
 } from "@/lib/ai/providers";
 import { assertWalletAuth } from "@/lib/auth/verify-wallet";
 import { applyIntentToProfile } from "@/lib/memory/apply-intent";
-import {
-  appendRoast,
-  loadFanProfileFast,
-  recallMemories,
-} from "@/lib/memory/fan-profile";
+import { appendRoast, loadFanProfileFast } from "@/lib/memory/fan-profile";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 
 export const maxDuration = 60;
@@ -102,17 +98,13 @@ export async function POST(req: Request) {
 
     const intent = detectIntent(lastUserText);
 
-    const [baseProfile, recalled] = await Promise.all([
-      loadFanProfileFast(walletAddress),
-      recallMemories(walletAddress, lastUserText, 2),
-    ]);
-
+    const baseProfile = await loadFanProfileFast(walletAddress, 500);
     const profile = applyIntentToProfile(walletAddress, baseProfile, intent);
     const toxicityLevel = computeToxicityLevel(profile);
 
     const system = buildSystemPrompt({
       fanProfile: profile,
-      recalledMemories: recalled,
+      recalledMemories: [],
       toxicityLevel,
     });
 
@@ -120,8 +112,8 @@ export async function POST(req: Request) {
       model: getChatModel(selectedModel.id, userKeys),
       system,
       messages: modelMessages,
-      temperature: 0.75,
-      maxOutputTokens: 200,
+      temperature: 0.65,
+      maxOutputTokens: 70,
       onFinish: ({ text }) => {
         void appendRoast(
           walletAddress,

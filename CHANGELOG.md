@@ -13,6 +13,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Demo prompt chips in press room (`lib/samples/demo-prompts.ts`) — tap to fill chat input for judges
 - `vercel.json` — `maxDuration: 60` on `/api/chat` (requires Vercel Pro for full effect; Hobby still capped ~10s)
 - Fast-path chat pipeline: `loadFanProfileFast`, `applyIntentToProfile`, `MR_TOXIC_FAST_PROMPT`
+- `lib/memory/apply-intent.ts` — in-memory intent apply without blocking MemWal before stream
 
 ### Changed
 
@@ -20,13 +21,18 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Default model: **Gemini 2.0 Flash Lite** (fastest free-tier path)
 - Intent detection: regex only (removed extra LLM `generateObject` call before every stream)
 - MemWal writes: `remember()` fire-and-forget instead of `rememberAndWait()` on chat hot path
-- Chat history capped to last 6 turns; `maxOutputTokens: 200`; compact system prompt (~120 words target)
+- **Ultra-short roasts (demo speed):** `maxOutputTokens: 70`, hard **40-word** cap in prompt (~⅓ prior length), `temperature: 0.65`
+- Skipped MemWal `recall` on chat hot path; `loadFanProfileFast` timeout **500ms**; minimal fan context in system prompt
+- Chat history: last **4** turns, each message truncated to **100** chars before LLM
+- Lessons learned section translated to **English** (for `FINAL_FEEDBACK.md`)
+- `/schedules` — removed demo/API-Football info banners (fixtures list only)
 
 ### Fixed
 
 - `FUNCTION_INVOCATION_TIMEOUT` on 3rd+ message — serverless function exceeded wall clock while waiting on MemWal + long stream
 - Model mismatch (“No API key for Claude…”) when user saved ChatGPT/Gemini key but dropdown still on Claude
 - Slow time-to-first-token — sequential blocking work before `streamText()` (see lesson §9 below)
+- Verbose multi-paragraph roasts — prompt now enforces one short paragraph for faster stream completion
 
 ### Planned
 
@@ -189,17 +195,19 @@ Notes from the hackathon build — so we do not repeat the same mistakes.
 **Mitigations applied (in repo):**
 
 1. MemWal: `remember()` **not awaited** on hot path; in-memory cache first.
-2. `loadFanProfileFast` / `recallMemories` — ~1.2s timeout, fallback to empty profile.
+2. `loadFanProfileFast` — **500ms** timeout, fallback to empty profile; **no `recall` on chat route**.
 3. Removed `syncPendingPredictions` from `/api/chat` — sync via **Check my predictions** (`/api/matches/sync`).
 4. Intent = regex (`detectIntent`), no auxiliary LLM call.
-5. `MR_TOXIC_FAST_PROMPT`, `maxOutputTokens: 200`, cap history at 6 turns.
-6. `onFinish` → `void appendRoast(...)` does not block the response.
-7. `vercel.json` `maxDuration: 60` for the chat route.
+5. `MR_TOXIC_FAST_PROMPT` — **40 words max**, one paragraph; `maxOutputTokens: 70` (~⅓ of earlier 200-token cap).
+6. History capped at **4** turns, **100** chars per message sent to the model.
+7. `onFinish` → `void appendRoast(...)` does not block the response.
+8. `vercel.json` `maxDuration: 60` for the chat route.
 
 **Trade-offs (for MemWal feedback):**
 
 - Fire-and-forget `remember` → faster demo but **no guarantee** the write committed before the response; judges see the roast immediately, memory may lag a few seconds.
-- Recall timeout → first wallet session may roast **without** full prediction graveyard until cache warms.
+- No recall on hot path + short profile blob → roasts may miss deep graveyard callbacks until cache warms.
+- Shorter output → punchier demo but less “press conference” depth; acceptable for live judge sessions.
 - SDK needs a clear **`remember` vs `rememberAndWait`** pattern in the cookbook ([#246](https://github.com/MystenLabs/MemWal/issues/246)) plus a serverless latency budget.
 
 ### 10. Vercel AI Gateway (tried, removed)

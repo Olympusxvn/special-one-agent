@@ -11,28 +11,26 @@ export interface BuildPromptInput {
 
 /** Slim profile for lower latency (smaller prompt → faster TTFT). */
 function compactFanProfile(profile: FanMemory) {
+  const lastPred = profile.past_predictions.at(-1);
   return {
-    favorite_team: profile.favorite_team,
-    flip_flop_count: profile.flip_flop_count,
-    confidence_level: profile.confidence_level,
-    past_predictions: profile.past_predictions.slice(-3),
-    last_roast_topics: profile.last_roast_topics.slice(-2),
+    team: profile.favorite_team || null,
+    flips: profile.flip_flop_count,
+    last: lastPred
+      ? `${lastPred.prediction}${lastPred.result ? ` → ${lastPred.result}` : ""}`
+      : null,
   };
 }
 
 export function buildSystemPrompt(input: BuildPromptInput): string {
   const parts = [MR_TOXIC_FAST_PROMPT];
 
-  parts.push(`\nTOXICITY_LEVEL: ${input.toxicityLevel}`);
-
-  parts.push(`\n## FAN_PROFILE`);
-  parts.push(JSON.stringify(compactFanProfile(input.fanProfile)));
+  parts.push(`tox:${input.toxicityLevel}`);
+  parts.push(`fan:${JSON.stringify(compactFanProfile(input.fanProfile))}`);
 
   if (input.recalledMemories.length > 0) {
-    parts.push(`\n## RECALLED_MEMORIES`);
-    for (const mem of input.recalledMemories.slice(0, 3)) {
-      parts.push(`- ${mem.replace(/\s+/g, " ").trim().slice(0, 200)}`);
-    }
+    parts.push(
+      `mem:${input.recalledMemories[0]!.replace(/\s+/g, " ").trim().slice(0, 80)}`,
+    );
   }
 
   if (input.matchContext) {

@@ -193,10 +193,10 @@ export function PredictionCard({
           className="btn-outline-festive w-full rounded-lg px-3 py-2 text-xs font-semibold text-gold disabled:opacity-50"
         >
           {syncing
-            ? "Syncing fixtures…"
+            ? "Syncing results…"
             : profileLoading
               ? "Refreshing ledger…"
-              : "Resolve via API-Football"}
+              : "Sync pending results"}
         </button>
       </div>
     </aside>

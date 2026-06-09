@@ -144,4 +144,4 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 
 ## Tóm tắt (VI)
 
-**Mr. Toxic Special One** — chatbot roast World Cup 2026, mỗi ví Sui có namespace Walrus `special-one-{address}`. Production: [special-one-agent.vercel.app](https://special-one-agent.vercel.app), MemWal mainnet + explorer link. MemWal **ghi profile + semantic lines** vẫn bật; **recall semantic** tạm tắt trên `/api/chat` để tránh timeout Vercel. Showcase: Portable Memory + Long-Term Memory (Prediction Roast). Còn TODO: Memory Moment 4 ngày, video demo, submit DeepSurge/Airtable.
+**Mr. Toxic Special One** — chatbot roast World Cup 2026, mỗi ví Sui có namespace Walrus `special-one-{address}`. Production: [special-one-agent.vercel.app](https://special-one-agent.vercel.app), MemWal mainnet + explorer link. Showcase **Portable Memory + Long-Term Memory** (2/3 năng lực cốt lõi); recall semantic đã bật lại song song (v0.3.0). Còn TODO: Memory Moment 4 ngày, video demo, submit DeepSurge/Airtable.

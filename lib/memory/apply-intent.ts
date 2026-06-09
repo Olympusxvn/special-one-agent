@@ -9,7 +9,7 @@ export function applyIntentToProfile(
   profile: FanMemory,
   intent: ParsedIntent,
 ): FanMemory {
-  let next = { ...profile };
+  const next = { ...profile };
 
   if (intent.intent === "set_team" && intent.favorite_team) {
     const trimmed = intent.favorite_team.trim();

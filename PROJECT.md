@@ -134,7 +134,7 @@ Think Comedy Central Roast meets World Cup group-chat chaos — fun, not hostile
 
 ## Walrus Sessions 4 — Submission Status
 
-→ **Full rules + checklist:** [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md)
+→ **Submission packet:** [SUBMISSION.md](./SUBMISSION.md) · **MemWal feedback:** [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) · **Rules:** [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md)
 
 | Submission item | Status |
 |-----------------|--------|

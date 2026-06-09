@@ -10,6 +10,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- `SUBMISSION.md` — Walrus Sessions 4 hackathon submission packet (links, MemWal features, checklist, Memory Moment script)
 - Demo prompt chips in press room (`lib/samples/demo-prompts.ts`) — tap to fill chat input for judges
 - `vercel.json` — `maxDuration: 60` on `/api/chat` (requires Vercel Pro for full effect; Hobby still capped ~10s)
 - Fast-path chat pipeline: `loadFanProfileFast`, `applyIntentToProfile`, `MR_TOXIC_FAST_PROMPT`
@@ -22,7 +23,8 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Intent detection: regex only (removed extra LLM `generateObject` call before every stream)
 - MemWal writes: `remember()` fire-and-forget instead of `rememberAndWait()` on chat hot path
 - **Ultra-short roasts (demo speed):** `maxOutputTokens: 70`, hard **40-word** cap in prompt (~⅓ prior length), `temperature: 0.65`
-- Skipped MemWal `recall` on chat hot path; `loadFanProfileFast` timeout **500ms**; minimal fan context in system prompt
+- **Semantic recall re-enabled on chat path:** `Promise.all` — `loadFanProfileFast` (500ms) + `recallMemories` (800ms, limit 2, warm-instance cache); up to 2 memories × 80 chars in prompt
+- Skipped MemWal `recall` on chat hot path *(superseded by parallel capped recall above)*; minimal fan context in system prompt
 - Chat history: last **4** turns, each message truncated to **100** chars before LLM
 - Lessons learned section translated to **English** (for `FINAL_FEEDBACK.md`)
 - `/schedules` — removed demo/API-Football info banners (fixtures list only)
@@ -39,7 +41,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Public repo (target ~19 Jun 2026) for hackathon submission
 - Memory Moment demo (Day 1 vs Day 4+ with same wallet)
 - Demo video & DeepSurge / Airtable forms
-- `FINAL_FEEDBACK.md` — synthesize lessons below for Walrus Sessions / MemWal forms
+- `FINAL_FEEDBACK.md` — created; serverless latency feedback for Walrus Sessions / MemWal forms (see file at repo root)
 
 ---
 

@@ -28,6 +28,7 @@ import {
 } from "@/lib/storage/wallet-auth";
 
 import { DemoPromptChips } from "./DemoPromptChips";
+import { JudgeDemoGuide, JudgeDemoGuideMobile } from "./JudgeDemoGuide";
 import { LlmSettingsModal } from "./LlmSettingsModal";
 import { MessageBubble } from "./MessageBubble";
 import { PredictionCard } from "./PredictionCard";
@@ -324,7 +325,19 @@ export function ChatContainer({
         onKeysChange={handleProvidersChange}
       />
 
-      <div className="relative mx-auto grid w-full max-w-6xl flex-1 gap-4 p-4 lg:grid-cols-[1fr_280px]">
+      <div className="relative mx-auto grid w-full max-w-7xl flex-1 gap-4 p-4 lg:grid-cols-[minmax(220px,260px)_1fr_minmax(260px,280px)]">
+        <JudgeDemoGuideMobile
+          memWalLive={memWalLive}
+          onOpenSettings={() => setSettingsOpen(true)}
+        />
+
+        <div className="hidden lg:block">
+          <JudgeDemoGuide
+            memWalLive={memWalLive}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
+        </div>
+
         <div className="festive-card flex flex-col rounded-xl">
           <div className="flex-1 space-y-4 overflow-y-auto p-4">
             {messages.length === 0 && (

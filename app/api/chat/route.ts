@@ -20,7 +20,11 @@ import {
 } from "@/lib/ai/providers";
 import { assertWalletAuth } from "@/lib/auth/verify-wallet";
 import { applyIntentToProfile } from "@/lib/memory/apply-intent";
-import { appendRoast, loadFanProfileFast } from "@/lib/memory/fan-profile";
+import {
+  appendRoast,
+  loadFanProfileFast,
+  recallMemories,
+} from "@/lib/memory/fan-profile";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 
 export const maxDuration = 60;
@@ -98,13 +102,20 @@ export async function POST(req: Request) {
 
     const intent = detectIntent(lastUserText);
 
-    const baseProfile = await loadFanProfileFast(walletAddress, 500);
+    const [baseProfile, recalledMemories] = await Promise.all([
+      loadFanProfileFast(walletAddress, 500),
+      recallMemories(walletAddress, lastUserText, {
+        limit: 2,
+        timeoutMs: 800,
+        useCache: true,
+      }),
+    ]);
     const profile = applyIntentToProfile(walletAddress, baseProfile, intent);
     const toxicityLevel = computeToxicityLevel(profile);
 
     const system = buildSystemPrompt({
       fanProfile: profile,
-      recalledMemories: [],
+      recalledMemories,
       toxicityLevel,
     });
 

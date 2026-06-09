@@ -27,10 +27,12 @@ export function buildSystemPrompt(input: BuildPromptInput): string {
   parts.push(`tox:${input.toxicityLevel}`);
   parts.push(`fan:${JSON.stringify(compactFanProfile(input.fanProfile))}`);
 
-  if (input.recalledMemories.length > 0) {
-    parts.push(
-      `mem:${input.recalledMemories[0]!.replace(/\s+/g, " ").trim().slice(0, 80)}`,
-    );
+  const memLines = input.recalledMemories
+    .slice(0, 2)
+    .map((line) => line.replace(/\s+/g, " ").trim().slice(0, 80))
+    .filter(Boolean);
+  if (memLines.length > 0) {
+    parts.push(`mem:${memLines.join(" | ")}`);
   }
 
   if (input.matchContext) {

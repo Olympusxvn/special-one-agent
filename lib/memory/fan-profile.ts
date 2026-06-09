@@ -7,6 +7,7 @@ import { emptyFanMemory } from "./types";
 const PROFILE_PREFIX = "FAN_PROFILE_JSON:";
 
 const profileCache = new Map<string, FanMemory>();
+const recallCache = new Map<string, { query: string; memories: string[] }>();
 
 function parseProfileFromText(text: string): FanMemory | null {
   const idx = text.indexOf(PROFILE_PREFIX);
@@ -209,26 +210,67 @@ export async function appendRoast(
   return next;
 }
 
+export interface RecallMemoriesOptions {
+  limit?: number;
+  timeoutMs?: number;
+  /** Reuse last recall in warm serverless instance when query unchanged. */
+  useCache?: boolean;
+}
+
+function normalizeRecallQuery(query: string): string {
+  const trimmed = query.replace(/\s+/g, " ").trim();
+  return trimmed.slice(0, 120) || "predictions team flip-flop roast wrong";
+}
+
+function trimRecallLines(lines: string[], limit: number): string[] {
+  return lines
+    .filter((text) => !text.includes(PROFILE_PREFIX))
+    .slice(0, limit)
+    .map((line) => line.replace(/\s+/g, " ").trim().slice(0, 80))
+    .filter(Boolean);
+}
+
 export async function recallMemories(
   walletAddress: string,
   query: string,
-  limit = 5,
+  options: RecallMemoriesOptions = {},
 ): Promise<string[]> {
+  const limit = options.limit ?? 5;
+  const timeoutMs = options.timeoutMs ?? 1200;
+  const useCache = options.useCache ?? false;
+  const normalizedQuery = normalizeRecallQuery(query);
+
+  if (useCache) {
+    const cached = recallCache.get(walletAddress);
+    if (cached?.query === normalizedQuery) {
+      return cached.memories;
+    }
+  }
+
   const client = getMemWalClient();
   if (!client) return [];
 
   try {
     const result = await Promise.race([
       client.recall({
-        query,
-        limit,
+        query: normalizedQuery,
+        limit: limit + 3,
         namespace: namespaceForWallet(walletAddress),
       }),
       new Promise<{ results: { text: string }[] }>((resolve) =>
-        setTimeout(() => resolve({ results: [] }), 1200),
+        setTimeout(() => resolve({ results: [] }), timeoutMs),
       ),
     ]);
-    return result.results.map((r) => r.text);
+    const memories = trimRecallLines(
+      result.results.map((r) => r.text),
+      limit,
+    );
+
+    if (useCache) {
+      recallCache.set(walletAddress, { query: normalizedQuery, memories });
+    }
+
+    return memories;
   } catch {
     return [];
   }

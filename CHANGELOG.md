@@ -8,13 +8,25 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Planned
+
+- Public repo polish for hackathon submission (target ~19 Jun 2026)
+- Memory Moment demo (Day 1 vs Day 4+ with same wallet)
+- Demo video & DeepSurge / Airtable forms
+
+---
+
+## [0.3.0] — 2026-06-07
+
 ### Added
 
-- `SUBMISSION.md` — Walrus Sessions 4 hackathon submission packet (links, MemWal features, checklist, Memory Moment script)
+- **`SUBMISSION.md`** — Walrus Sessions 4 hackathon submission packet (MemWal features, Memory Moment script, checklist)
+- **`FINAL_FEEDBACK.md`** — honest MemWal / serverless latency feedback for organizers ([#246](https://github.com/MystenLabs/MemWal/issues/246), [#247](https://github.com/MystenLabs/MemWal/issues/247), [#248](https://github.com/MystenLabs/MemWal/issues/248))
 - Demo prompt chips in press room (`lib/samples/demo-prompts.ts`) — tap to fill chat input for judges
 - `vercel.json` — `maxDuration: 60` on `/api/chat` (requires Vercel Pro for full effect; Hobby still capped ~10s)
 - Fast-path chat pipeline: `loadFanProfileFast`, `applyIntentToProfile`, `MR_TOXIC_FAST_PROMPT`
 - `lib/memory/apply-intent.ts` — in-memory intent apply without blocking MemWal before stream
+- **`recallMemories` options API** — `RecallMemoriesOptions` (`limit`, `timeoutMs`, `useCache`); filters `FAN_PROFILE_JSON` from semantic hits; warm-instance recall cache per wallet + query
 
 ### Changed
 
@@ -23,11 +35,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Intent detection: regex only (removed extra LLM `generateObject` call before every stream)
 - MemWal writes: `remember()` fire-and-forget instead of `rememberAndWait()` on chat hot path
 - **Ultra-short roasts (demo speed):** `maxOutputTokens: 70`, hard **40-word** cap in prompt (~⅓ prior length), `temperature: 0.65`
-- **Semantic recall re-enabled on chat path:** `Promise.all` — `loadFanProfileFast` (500ms) + `recallMemories` (800ms, limit 2, warm-instance cache); up to 2 memories × 80 chars in prompt
-- Skipped MemWal `recall` on chat hot path *(superseded by parallel capped recall above)*; minimal fan context in system prompt
+- **Semantic recall re-enabled on chat path:** `Promise.all` — `loadFanProfileFast` (500ms) + `recallMemories` (800ms, limit 2, `useCache: true`); prompt injects up to **2** memories × **80** chars as `mem:line1 | line2`
 - Chat history: last **4** turns, each message truncated to **100** chars before LLM
-- Lessons learned section translated to **English** (for `FINAL_FEEDBACK.md`)
+- Lessons learned section translated to **English** (feeds `FINAL_FEEDBACK.md`)
 - `/schedules` — removed demo/API-Football info banners (fixtures list only)
+- `README.md` / `PROJECT.md` — links to `SUBMISSION.md` and `FINAL_FEEDBACK.md`
 
 ### Fixed
 
@@ -35,13 +47,6 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Model mismatch (“No API key for Claude…”) when user saved ChatGPT/Gemini key but dropdown still on Claude
 - Slow time-to-first-token — sequential blocking work before `streamText()` (see lesson §9 below)
 - Verbose multi-paragraph roasts — prompt now enforces one short paragraph for faster stream completion
-
-### Planned
-
-- Public repo (target ~19 Jun 2026) for hackathon submission
-- Memory Moment demo (Day 1 vs Day 4+ with same wallet)
-- Demo video & DeepSurge / Airtable forms
-- `FINAL_FEEDBACK.md` — created; serverless latency feedback for Walrus Sessions / MemWal forms (see file at repo root)
 
 ---
 
@@ -197,18 +202,19 @@ Notes from the hackathon build — so we do not repeat the same mistakes.
 **Mitigations applied (in repo):**
 
 1. MemWal: `remember()` **not awaited** on hot path; in-memory cache first.
-2. `loadFanProfileFast` — **500ms** timeout, fallback to empty profile; **no `recall` on chat route**.
-3. Removed `syncPendingPredictions` from `/api/chat` — sync via **Check my predictions** (`/api/matches/sync`).
-4. Intent = regex (`detectIntent`), no auxiliary LLM call.
-5. `MR_TOXIC_FAST_PROMPT` — **40 words max**, one paragraph; `maxOutputTokens: 70` (~⅓ of earlier 200-token cap).
-6. History capped at **4** turns, **100** chars per message sent to the model.
-7. `onFinish` → `void appendRoast(...)` does not block the response.
-8. `vercel.json` `maxDuration: 60` for the chat route.
+2. `loadFanProfileFast` — **500ms** timeout, fallback to empty profile.
+3. **Parallel semantic recall** — `Promise.all` with `recallMemories` (**800ms** cap, limit **2**, filters profile JSON, warm-instance cache); never blocks stream with `rememberAndWait`.
+4. Removed `syncPendingPredictions` from `/api/chat` — sync via **Check my predictions** (`/api/matches/sync`).
+5. Intent = regex (`detectIntent`), no auxiliary LLM call.
+6. `MR_TOXIC_FAST_PROMPT` — **40 words max**, one paragraph; `maxOutputTokens: 70` (~⅓ of earlier 200-token cap).
+7. History capped at **4** turns, **100** chars per message sent to the model.
+8. `onFinish` → `void appendRoast(...)` does not block the response.
+9. `vercel.json` `maxDuration: 60` for the chat route.
 
-**Trade-offs (for MemWal feedback):**
+**Trade-offs (for MemWal feedback — see [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md)):**
 
 - Fire-and-forget `remember` → faster demo but **no guarantee** the write committed before the response; judges see the roast immediately, memory may lag a few seconds.
-- No recall on hot path + short profile blob → roasts may miss deep graveyard callbacks until cache warms.
+- Capped parallel recall (+0.5–1s TTFT vs no recall) → stronger **Memory Moment** callbacks without sequential MemWal blocking.
 - Shorter output → punchier demo but less “press conference” depth; acceptable for live judge sessions.
 - SDK needs a clear **`remember` vs `rememberAndWait`** pattern in the cookbook ([#246](https://github.com/MystenLabs/MemWal/issues/246)) plus a serverless latency budget.
 
@@ -230,29 +236,6 @@ Notes from the hackathon build — so we do not repeat the same mistakes.
 
 ---
 
-## Suggested `FINAL_FEEDBACK.md` outline
-
-```markdown
-## What we built
-- Roast bot + per-wallet MemWal namespace + Sui wallet auth
-
-## What worked
-- Wallet-only identity, semantic recall for roasts, demo chips, BYOK Gemini free tier
-
-## Pain points (with evidence)
-- FUNCTION_INVOCATION_TIMEOUT — MemWal rememberAndWait + long stream on serverless
-- Latency stack: intent LLM + sync + recall + fat prompt
-- MemWal multi-tenant cookbook gap ([#246])
-
-## What we changed
-- (copy from [Unreleased] above)
-
-## Ask for MemWal / Walrus Sessions
-- Serverless latency guide, rememberAndWait semantics, upsert profile ([#247]), healthCheck ([#248])
-```
-
----
-
 ## Links
 
 | Resource | URL |
@@ -262,6 +245,7 @@ Notes from the hackathon build — so we do not repeat the same mistakes.
 | MemWal dashboard | https://memory.walrus.xyz/dashboard |
 | Walrus Sessions 4 | https://thewalrussessions.wal.app/memory-world-cup |
 
-[Unreleased]: https://github.com/Olympusxvn/special-one-agent/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Olympusxvn/special-one-agent/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Olympusxvn/special-one-agent/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Olympusxvn/special-one-agent/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Olympusxvn/special-one-agent/commit/93e3f62

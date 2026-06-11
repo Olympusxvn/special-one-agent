@@ -17,11 +17,17 @@ import { isModelAvailableForUser } from "@/lib/ai/providers";
 import type { ServerLlmCapabilities } from "@/lib/ai/server-llm";
 import { detectIntent } from "@/lib/ai/intent";
 import { buildAuthMessage } from "@/lib/auth/messages";
-import { mergeIntentIntoProfile } from "@/lib/memory/merge-intent";
 import { formatChatError } from "@/lib/chat/format-error";
+import { mergeIntentIntoProfile } from "@/lib/memory/merge-intent";
+import { mergeFanProfiles } from "@/lib/memory/merge-profiles";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 import type { FanMemory } from "@/lib/memory/types";
 import { emptyFanMemory } from "@/lib/memory/types";
+import {
+  cachedOrEmpty,
+  loadCachedFanProfile,
+  saveCachedFanProfile,
+} from "@/lib/storage/fan-profile-cache";
 import { getStoredLlmKeys } from "@/lib/storage/llm-keys";
 import {
   clearStoredWalletAuth,
@@ -170,7 +176,11 @@ export function ChatContainer({
       });
       if (res.ok) {
         const data = (await res.json()) as { profile: FanMemory };
-        setProfile(data.profile);
+        const local =
+          loadCachedFanProfile(account.address) ?? emptyFanMemory();
+        const merged = mergeFanProfiles(local, data.profile);
+        setProfile(merged);
+        saveCachedFanProfile(account.address, merged);
       }
     } finally {
       setProfileLoading(false);
@@ -234,6 +244,10 @@ export function ChatContainer({
 
   useEffect(() => {
     if (verified && account?.address) {
+      const cached = cachedOrEmpty(account.address);
+      if (cached.favorite_team || cached.past_predictions.length > 0) {
+        setProfile(cached);
+      }
       void fetchProfile();
     } else {
       setProfile(null);
@@ -277,7 +291,14 @@ export function ChatContainer({
       });
       if (res.ok) {
         const data = (await res.json()) as { profile: FanMemory };
-        setProfile(data.profile);
+        const local = account?.address
+          ? (loadCachedFanProfile(account.address) ?? emptyFanMemory())
+          : emptyFanMemory();
+        const merged = mergeFanProfiles(local, data.profile);
+        setProfile(merged);
+        if (account?.address) {
+          saveCachedFanProfile(account.address, merged);
+        }
       }
     } finally {
       setSyncing(false);
@@ -293,10 +314,15 @@ export function ChatContainer({
     const text = input.trim();
     if (!text || !canChat) return;
     const intent = detectIntent(text);
-    if (intent.intent !== "banter") {
-      setProfile((prev) =>
-        mergeIntentIntoProfile(prev ?? emptyFanMemory(), intent),
-      );
+    if (intent.intent !== "banter" && account?.address) {
+      setProfile((prev) => {
+        const merged = mergeIntentIntoProfile(
+          prev ?? cachedOrEmpty(account.address),
+          intent,
+        );
+        saveCachedFanProfile(account.address, merged);
+        return merged;
+      });
     }
     void sendMessage({ text });
     setInput("");

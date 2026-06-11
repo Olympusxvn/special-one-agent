@@ -1,6 +1,7 @@
 import { nanoid } from "nanoid";
 
 import { getMemWalClient, namespaceForWallet } from "./client";
+import { buildProfileFromRecallHits } from "./profile-from-recall";
 import type { ConfidenceLevel, FanMemory, Prediction } from "./types";
 import { emptyFanMemory } from "./types";
 
@@ -9,55 +10,25 @@ const PROFILE_PREFIX = "FAN_PROFILE_JSON:";
 /** Relayer indexing can take 25–35s on mainnet — do not cut this short. */
 const PERSIST_WAIT_MS = 45_000;
 
+const RESTORE_TIMEOUT_MS = 8_000;
+
 const profileCache = new Map<string, FanMemory>();
 const recallCache = new Map<string, { query: string; memories: string[] }>();
 
-function parseProfileFromText(text: string): FanMemory | null {
-  const idx = text.indexOf(PROFILE_PREFIX);
-  if (idx === -1) return null;
+async function restoreNamespaceBestEffort(
+  client: NonNullable<ReturnType<typeof getMemWalClient>>,
+  namespace: string,
+): Promise<void> {
   try {
-    return JSON.parse(text.slice(idx + PROFILE_PREFIX.length)) as FanMemory;
+    await Promise.race([
+      client.restore(namespace, 20),
+      new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error("restore timeout")), RESTORE_TIMEOUT_MS),
+      ),
+    ]);
   } catch {
-    return null;
+    // restore is best-effort — recall may still succeed
   }
-}
-
-function enrichFromSemanticLines(
-  profile: FanMemory,
-  hits: { text: string }[],
-): FanMemory {
-  if (profile.favorite_team) return profile;
-  for (const hit of hits) {
-    const support = hit.text.match(
-      /User supports ([A-Za-z][A-Za-z\s'-]+?)(?:\.|,|!|$)/i,
-    );
-    if (support?.[1]) {
-      return { ...profile, favorite_team: support[1].trim() };
-    }
-  }
-  return profile;
-}
-
-function pickLatestProfile(hits: { text: string }[]): FanMemory | null {
-  let best: FanMemory | null = null;
-  for (const hit of hits) {
-    const parsed = parseProfileFromText(hit.text);
-    if (!parsed) continue;
-    if (!best) {
-      best = parsed;
-      continue;
-    }
-    const bestPreds = best.past_predictions.length;
-    const nextPreds = parsed.past_predictions.length;
-    if (
-      nextPreds > bestPreds ||
-      (nextPreds === bestPreds &&
-        parsed.roast_history.length >= best.roast_history.length)
-    ) {
-      best = parsed;
-    }
-  }
-  return best;
 }
 
 export async function loadFanProfile(walletAddress: string): Promise<FanMemory> {
@@ -74,31 +45,40 @@ export async function loadFanProfile(walletAddress: string): Promise<FanMemory> 
   const namespace = namespaceForWallet(walletAddress);
 
   try {
-    const [profileHits, fallbackHits] = await Promise.all([
+    await restoreNamespaceBestEffort(client, namespace);
+
+    const [teamHits, predHits, jsonHits] = await Promise.all([
       client.recall({
-        query: "FAN_PROFILE_JSON fan profile ledger predictions favorite team",
-        limit: 12,
+        query: "favorite team user supports football world cup",
+        limit: 10,
         namespace,
       }),
       client.recall({
-        query: `${PROFILE_PREFIX} structured profile snapshot`,
-        limit: 8,
+        query: "prediction score world cup match pending result",
+        limit: 15,
+        namespace,
+      }),
+      client.recall({
+        query: "FAN_PROFILE_JSON fan profile ledger predictions",
+        limit: 10,
         namespace,
       }),
     ]);
 
-    const merged = [...profileHits.results, ...fallbackHits.results];
-    const parsed = pickLatestProfile(merged);
-    if (parsed) {
-      const enriched = enrichFromSemanticLines(parsed, merged);
-      profileCache.set(walletAddress, enriched);
-      return { ...enriched };
-    }
+    const merged = [
+      ...teamHits.results,
+      ...predHits.results,
+      ...jsonHits.results,
+    ];
+    const profile = buildProfileFromRecallHits(merged);
 
-    const semanticOnly = enrichFromSemanticLines(empty, merged);
-    if (semanticOnly.favorite_team) {
-      profileCache.set(walletAddress, semanticOnly);
-      return { ...semanticOnly };
+    if (
+      profile.favorite_team ||
+      profile.past_predictions.length > 0 ||
+      profile.roast_history.length > 0
+    ) {
+      profileCache.set(walletAddress, profile);
+      return { ...profile };
     }
   } catch (err) {
     console.error("loadFanProfile recall failed:", err);

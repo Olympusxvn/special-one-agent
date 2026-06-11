@@ -20,6 +20,7 @@ import {
   type UserLlmKeys,
 } from "@/lib/ai/providers";
 import { assertWalletAuth } from "@/lib/auth/verify-wallet";
+import { analyzeUserMessage } from "@/lib/memory/analyze-message";
 import { applyIntentToProfile } from "@/lib/memory/apply-intent";
 import {
   appendRoastToProfile,
@@ -116,6 +117,8 @@ export async function POST(req: Request) {
       }),
     ]);
     const profile = applyIntentToProfile(walletAddress, baseProfile, intent);
+    // MemWal chatbot pattern: analyze() extracts facts (team, prefs) per turn
+    analyzeUserMessage(walletAddress, lastUserText);
     if (intentMutatesProfile(intent)) {
       persistProfileEnqueue(walletAddress, profile);
     }

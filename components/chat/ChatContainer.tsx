@@ -15,7 +15,9 @@ import {
 } from "@/lib/ai/models";
 import { isModelAvailableForUser } from "@/lib/ai/providers";
 import type { ServerLlmCapabilities } from "@/lib/ai/server-llm";
+import { detectIntent } from "@/lib/ai/intent";
 import { buildAuthMessage } from "@/lib/auth/messages";
+import { mergeIntentIntoProfile } from "@/lib/memory/merge-intent";
 import { formatChatError } from "@/lib/chat/format-error";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 import type { FanMemory } from "@/lib/memory/types";
@@ -244,9 +246,17 @@ export function ChatContainer({
       prevChatStatus.current === "submitted";
     if (wasStreaming && status === "ready") {
       void fetchProfile();
-      const retry = setTimeout(() => void fetchProfile(), 1500);
+      const t2 = setTimeout(() => void fetchProfile(), 2000);
+      const t6 = setTimeout(() => void fetchProfile(), 6000);
+      const t15 = setTimeout(() => void fetchProfile(), 15000);
+      const t35 = setTimeout(() => void fetchProfile(), 35000);
       prevChatStatus.current = status;
-      return () => clearTimeout(retry);
+      return () => {
+        clearTimeout(t2);
+        clearTimeout(t6);
+        clearTimeout(t15);
+        clearTimeout(t35);
+      };
     }
     prevChatStatus.current = status;
   }, [status, fetchProfile]);
@@ -280,8 +290,15 @@ export function ChatContainer({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !canChat) return;
-    void sendMessage({ text: input.trim() });
+    const text = input.trim();
+    if (!text || !canChat) return;
+    const intent = detectIntent(text);
+    if (intent.intent !== "banter") {
+      setProfile((prev) =>
+        mergeIntentIntoProfile(prev ?? emptyFanMemory(), intent),
+      );
+    }
+    void sendMessage({ text });
     setInput("");
   };
 

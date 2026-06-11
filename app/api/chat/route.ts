@@ -1,4 +1,5 @@
 import { getErrorMessage } from "@ai-sdk/provider-utils";
+import { waitUntil } from "@vercel/functions";
 import { streamText, type UIMessage } from "ai";
 import { NextResponse } from "next/server";
 
@@ -24,9 +25,11 @@ import {
   appendRoastToProfile,
   loadFanProfileFast,
   persistProfileAndWait,
+  persistProfileEnqueue,
   recallMemories,
   rememberSemanticLine,
 } from "@/lib/memory/fan-profile";
+import { intentMutatesProfile } from "@/lib/memory/merge-intent";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 
 export const maxDuration = 60;
@@ -113,6 +116,9 @@ export async function POST(req: Request) {
       }),
     ]);
     const profile = applyIntentToProfile(walletAddress, baseProfile, intent);
+    if (intentMutatesProfile(intent)) {
+      persistProfileEnqueue(walletAddress, profile);
+    }
     const toxicityLevel = computeToxicityLevel(profile);
 
     const system = buildSystemPrompt({
@@ -128,7 +134,7 @@ export async function POST(req: Request) {
       temperature: 0.65,
       maxOutputTokens: 70,
       onFinish: ({ text }) => {
-        void (async () => {
+        const finalize = async () => {
           const topics = extractRoastTopics(text);
           const withRoast = appendRoastToProfile(profile, text, topics);
           await persistProfileAndWait(walletAddress, withRoast);
@@ -136,7 +142,12 @@ export async function POST(req: Request) {
             walletAddress,
             `Roast delivered: ${text.slice(0, 200)}`,
           );
-        })().catch((err) => console.error("post-stream persist failed:", err));
+        };
+        waitUntil(
+          finalize().catch((err) =>
+            console.error("post-stream persist failed:", err),
+          ),
+        );
       },
     });
 

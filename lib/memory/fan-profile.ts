@@ -6,7 +6,8 @@ import { emptyFanMemory } from "./types";
 
 const PROFILE_PREFIX = "FAN_PROFILE_JSON:";
 
-const PERSIST_WAIT_MS = 10_000;
+/** Relayer indexing can take 25–35s on mainnet — do not cut this short. */
+const PERSIST_WAIT_MS = 45_000;
 
 const profileCache = new Map<string, FanMemory>();
 const recallCache = new Map<string, { query: string; memories: string[] }>();
@@ -19,6 +20,22 @@ function parseProfileFromText(text: string): FanMemory | null {
   } catch {
     return null;
   }
+}
+
+function enrichFromSemanticLines(
+  profile: FanMemory,
+  hits: { text: string }[],
+): FanMemory {
+  if (profile.favorite_team) return profile;
+  for (const hit of hits) {
+    const support = hit.text.match(
+      /User supports ([A-Za-z][A-Za-z\s'-]+?)(?:\.|,|!|$)/i,
+    );
+    if (support?.[1]) {
+      return { ...profile, favorite_team: support[1].trim() };
+    }
+  }
+  return profile;
 }
 
 function pickLatestProfile(hits: { text: string }[]): FanMemory | null {
@@ -73,8 +90,15 @@ export async function loadFanProfile(walletAddress: string): Promise<FanMemory> 
     const merged = [...profileHits.results, ...fallbackHits.results];
     const parsed = pickLatestProfile(merged);
     if (parsed) {
-      profileCache.set(walletAddress, parsed);
-      return { ...parsed };
+      const enriched = enrichFromSemanticLines(parsed, merged);
+      profileCache.set(walletAddress, enriched);
+      return { ...enriched };
+    }
+
+    const semanticOnly = enrichFromSemanticLines(empty, merged);
+    if (semanticOnly.favorite_team) {
+      profileCache.set(walletAddress, semanticOnly);
+      return { ...semanticOnly };
     }
   } catch (err) {
     console.error("loadFanProfile recall failed:", err);
@@ -106,6 +130,24 @@ function rememberSemantic(walletAddress: string, line: string): void {
   const namespace = namespaceForWallet(walletAddress);
   void client.remember(line, namespace).catch((err) => {
     console.error("rememberSemantic failed:", err);
+  });
+}
+
+/** Queue profile snapshot immediately (202) — survives serverless early freeze. */
+export function persistProfileEnqueue(
+  walletAddress: string,
+  profile: FanMemory,
+): void {
+  setProfileCache(walletAddress, profile);
+
+  const client = getMemWalClient();
+  if (!client) return;
+
+  const namespace = namespaceForWallet(walletAddress);
+  const snapshot = `${PROFILE_PREFIX}${JSON.stringify(profile)}`;
+
+  void client.remember(snapshot, namespace).catch((err) => {
+    console.error("persistProfileEnqueue failed:", err);
   });
 }
 

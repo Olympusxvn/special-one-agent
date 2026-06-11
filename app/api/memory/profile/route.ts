@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
-  const profile = await loadFanProfileFast(walletAddress, 800);
+  const profile = await loadFanProfileFast(walletAddress, 5000);
   const toxicityLevel = computeToxicityLevel(profile);
 
   return NextResponse.json({

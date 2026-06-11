@@ -74,8 +74,10 @@ export function ChatContainer({
   const [profile, setProfile] = useState<FanMemory | null>(null);
   const [walrusMemories, setWalrusMemories] = useState<string[]>([]);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [committing, setCommitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const prevChatStatus = useRef<string>("ready");
+  const lastSentMessageRef = useRef<string | null>(null);
   const [input, setInput] = useState("");
   const [connectedProviders, setConnectedProviders] = useState<LlmProvider[]>(
     [],
@@ -211,6 +213,43 @@ export function ChatContainer({
     }
   }, [account?.address]);
 
+  const commitToWalrus = useCallback(
+    async (message: string) => {
+      if (!account?.address || !message.trim()) return;
+      const auth = getStoredWalletAuth();
+      if (!auth?.message || !auth.signature) return;
+
+      setCommitting(true);
+      try {
+        const res = await fetch("/api/memory/commit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress: account.address,
+            authMessage: auth.message,
+            authSignature: auth.signature,
+            message: message.trim(),
+          }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as {
+            profile: FanMemory;
+            memories: string[];
+          };
+          setWalrusMemories(data.memories ?? []);
+          const local =
+            loadCachedFanProfile(account.address) ?? emptyFanMemory();
+          const merged = mergeFanProfiles(local, data.profile);
+          setProfile(merged);
+          saveCachedFanProfile(account.address, merged);
+        }
+      } finally {
+        setCommitting(false);
+      }
+    },
+    [account?.address],
+  );
+
   const verifyWallet = useCallback(async () => {
     if (!account?.address) return;
     setVerifying(true);
@@ -283,21 +322,14 @@ export function ChatContainer({
       prevChatStatus.current === "streaming" ||
       prevChatStatus.current === "submitted";
     if (wasStreaming && status === "ready") {
-      void fetchProfile();
-      const t2 = setTimeout(() => void fetchProfile(), 2000);
-      const t6 = setTimeout(() => void fetchProfile(), 6000);
-      const t15 = setTimeout(() => void fetchProfile(), 15000);
-      const t35 = setTimeout(() => void fetchProfile(), 35000);
+      const msg = lastSentMessageRef.current;
+      if (msg) void commitToWalrus(msg);
+      const t30 = setTimeout(() => void fetchProfile(), 30_000);
       prevChatStatus.current = status;
-      return () => {
-        clearTimeout(t2);
-        clearTimeout(t6);
-        clearTimeout(t15);
-        clearTimeout(t35);
-      };
+      return () => clearTimeout(t30);
     }
     prevChatStatus.current = status;
-  }, [status, fetchProfile]);
+  }, [status, fetchProfile, commitToWalrus]);
 
   const handleSync = async () => {
     if (!account?.address) return;
@@ -348,6 +380,7 @@ export function ChatContainer({
         return merged;
       });
     }
+    lastSentMessageRef.current = text;
     void sendMessage({ text });
     setInput("");
   };
@@ -513,7 +546,7 @@ export function ChatContainer({
         <PredictionCard
           profile={profile}
           walrusMemories={walrusMemories}
-          profileLoading={profileLoading}
+          profileLoading={profileLoading || committing}
           memWalLive={memWalLive}
           walletAddress={account.address}
           onSync={handleSync}

@@ -130,7 +130,7 @@ export function PredictionCard({
 
       {profileLoading && !teamLabel && pending.length === 0 && (
         <p className="mb-3 animate-pulse text-xs text-foreground/50">
-          Loading your Walrus record…
+          Saving to Walrus Memory…
         </p>
       )}
 

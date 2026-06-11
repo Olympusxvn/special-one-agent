@@ -1,5 +1,4 @@
 import { getErrorMessage } from "@ai-sdk/provider-utils";
-import { waitUntil } from "@vercel/functions";
 import { streamText, type UIMessage } from "ai";
 import { NextResponse } from "next/server";
 
@@ -28,9 +27,9 @@ import {
   persistProfileEnqueue,
   recallMemories,
   rememberSemanticLine,
+  setProfileCache,
 } from "@/lib/memory/fan-profile";
 import { intentMutatesProfile } from "@/lib/memory/merge-intent";
-import { rememberUserTurn } from "@/lib/memory/wallet-memory";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 
 export const maxDuration = 60;
@@ -137,20 +136,12 @@ export async function POST(req: Request) {
       temperature: 0.65,
       maxOutputTokens: 70,
       onFinish: ({ text }) => {
-        const finalize = async () => {
-          const topics = extractRoastTopics(text);
-          const withRoast = appendRoastToProfile(profile, text, topics);
-          await rememberUserTurn(walletAddress, lastUserText);
-          persistProfileEnqueue(walletAddress, withRoast);
-          rememberSemanticLine(
-            walletAddress,
-            `Roast delivered: ${text.slice(0, 200)}`,
-          );
-        };
-        waitUntil(
-          finalize().catch((err) =>
-            console.error("post-stream persist failed:", err),
-          ),
+        const topics = extractRoastTopics(text);
+        const withRoast = appendRoastToProfile(profile, text, topics);
+        setProfileCache(walletAddress, withRoast);
+        rememberSemanticLine(
+          walletAddress,
+          `Roast delivered: ${text.slice(0, 200)}`,
         );
       },
     });

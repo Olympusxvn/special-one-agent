@@ -329,12 +329,16 @@ export function ChatContainer({
         <JudgeDemoGuideMobile
           memWalLive={memWalLive}
           onOpenSettings={() => setSettingsOpen(true)}
+          onPickDemo={setInput}
+          demoDisabled={!canChat || isLoading}
         />
 
         <div className="hidden lg:block">
           <JudgeDemoGuide
             memWalLive={memWalLive}
             onOpenSettings={() => setSettingsOpen(true)}
+            onPickDemo={setInput}
+            demoDisabled={!canChat || isLoading}
           />
         </div>
 

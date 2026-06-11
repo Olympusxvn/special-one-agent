@@ -21,9 +21,11 @@ import {
 import { assertWalletAuth } from "@/lib/auth/verify-wallet";
 import { applyIntentToProfile } from "@/lib/memory/apply-intent";
 import {
-  appendRoast,
+  appendRoastToProfile,
   loadFanProfileFast,
+  persistProfileAndWait,
   recallMemories,
+  rememberSemanticLine,
 } from "@/lib/memory/fan-profile";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 
@@ -126,12 +128,15 @@ export async function POST(req: Request) {
       temperature: 0.65,
       maxOutputTokens: 70,
       onFinish: ({ text }) => {
-        void appendRoast(
-          walletAddress,
-          profile,
-          text,
-          extractRoastTopics(text),
-        ).catch((err) => console.error("appendRoast failed:", err));
+        void (async () => {
+          const topics = extractRoastTopics(text);
+          const withRoast = appendRoastToProfile(profile, text, topics);
+          await persistProfileAndWait(walletAddress, withRoast);
+          rememberSemanticLine(
+            walletAddress,
+            `Roast delivered: ${text.slice(0, 200)}`,
+          );
+        })().catch((err) => console.error("post-stream persist failed:", err));
       },
     });
 

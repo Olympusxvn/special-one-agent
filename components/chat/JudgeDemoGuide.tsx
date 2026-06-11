@@ -4,6 +4,7 @@ import {
   getPublicMemWalAccountId,
   memWalExplorerUrl,
 } from "@/lib/memwal/constants";
+import { GUIDE_STEP_PROMPTS } from "@/lib/samples/demo-prompts";
 
 const STEPS = [
   {
@@ -20,17 +21,17 @@ const STEPS = [
   {
     n: 3,
     title: "Declare team",
-    body: 'Tap 🇧🇷 Brazil fan or type who you support → Send. Ledger (right) shows your team.',
+    body: "Tap a demo line or type who you support → Send. Ledger (right) shows your team.",
   },
   {
     n: 4,
     title: "Predict",
-    body: "Tap ⚽ Predict score → Send. Open predictions appears in Walrus Memory Ledger.",
+    body: "Tap ⚽ Predict score → Send. Open prediction appears in Walrus Memory Ledger.",
   },
   {
     n: 5,
     title: "Wrong result",
-    body: 'Type e.g. "Argentina beat Brazil 1-0" → Resolved history shows WRONG · toxicity rises.',
+    body: 'Tap 📊 Report result or type e.g. "France beat Germany 2-1" → WRONG · toxicity rises.',
   },
   {
     n: 6,
@@ -44,12 +45,45 @@ const STEPS = [
   },
 ] as const;
 
+function GuideDemoChips({
+  step,
+  onPick,
+  disabled,
+}: {
+  step: number;
+  onPick?: (text: string) => void;
+  disabled?: boolean;
+}) {
+  const prompts = GUIDE_STEP_PROMPTS[step];
+  if (!prompts?.length || !onPick) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {prompts.map((p) => (
+        <button
+          key={p.text}
+          type="button"
+          disabled={disabled}
+          onClick={() => onPick(p.text)}
+          className="rounded-full border border-gold/25 bg-press/80 px-2.5 py-1 text-[10px] text-foreground/75 transition hover:border-gold/50 hover:bg-gold/10 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {p.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function JudgeDemoGuideContent({
   memWalLive,
   onOpenSettings,
+  onPickDemo,
+  demoDisabled,
 }: {
   memWalLive: boolean;
   onOpenSettings: () => void;
+  onPickDemo?: (text: string) => void;
+  demoDisabled?: boolean;
 }) {
   const accountId = getPublicMemWalAccountId();
 
@@ -94,6 +128,11 @@ function JudgeDemoGuideContent({
                 </>
               )}
             </p>
+            <GuideDemoChips
+              step={step.n}
+              onPick={onPickDemo}
+              disabled={demoDisabled}
+            />
           </li>
         ))}
       </ol>
@@ -133,15 +172,21 @@ function JudgeDemoGuideContent({
 export function JudgeDemoGuide({
   memWalLive,
   onOpenSettings,
+  onPickDemo,
+  demoDisabled,
 }: {
   memWalLive: boolean;
   onOpenSettings: () => void;
+  onPickDemo?: (text: string) => void;
+  demoDisabled?: boolean;
 }) {
   return (
     <aside className="festive-card flex max-h-[calc(100vh-8rem)] flex-col rounded-xl border-2 border-gold/50 bg-gold/[0.06] p-4 shadow-[0_0_24px_rgba(245,200,66,0.08)]">
       <JudgeDemoGuideContent
         memWalLive={memWalLive}
         onOpenSettings={onOpenSettings}
+        onPickDemo={onPickDemo}
+        demoDisabled={demoDisabled}
       />
     </aside>
   );
@@ -150,9 +195,13 @@ export function JudgeDemoGuide({
 export function JudgeDemoGuideMobile({
   memWalLive,
   onOpenSettings,
+  onPickDemo,
+  demoDisabled,
 }: {
   memWalLive: boolean;
   onOpenSettings: () => void;
+  onPickDemo?: (text: string) => void;
+  demoDisabled?: boolean;
 }) {
   return (
     <details className="festive-card rounded-xl border-2 border-gold/40 bg-gold/[0.06] p-3 lg:hidden">
@@ -163,6 +212,8 @@ export function JudgeDemoGuideMobile({
         <JudgeDemoGuideContent
           memWalLive={memWalLive}
           onOpenSettings={onOpenSettings}
+          onPickDemo={onPickDemo}
+          demoDisabled={demoDisabled}
         />
       </div>
     </details>

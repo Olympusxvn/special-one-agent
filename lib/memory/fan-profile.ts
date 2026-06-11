@@ -6,6 +6,8 @@ import { emptyFanMemory } from "./types";
 
 const PROFILE_PREFIX = "FAN_PROFILE_JSON:";
 
+const PERSIST_WAIT_MS = 10_000;
+
 const profileCache = new Map<string, FanMemory>();
 const recallCache = new Map<string, { query: string; memories: string[] }>();
 
@@ -17,6 +19,28 @@ function parseProfileFromText(text: string): FanMemory | null {
   } catch {
     return null;
   }
+}
+
+function pickLatestProfile(hits: { text: string }[]): FanMemory | null {
+  let best: FanMemory | null = null;
+  for (const hit of hits) {
+    const parsed = parseProfileFromText(hit.text);
+    if (!parsed) continue;
+    if (!best) {
+      best = parsed;
+      continue;
+    }
+    const bestPreds = best.past_predictions.length;
+    const nextPreds = parsed.past_predictions.length;
+    if (
+      nextPreds > bestPreds ||
+      (nextPreds === bestPreds &&
+        parsed.roast_history.length >= best.roast_history.length)
+    ) {
+      best = parsed;
+    }
+  }
+  return best;
 }
 
 export async function loadFanProfile(walletAddress: string): Promise<FanMemory> {
@@ -33,54 +57,80 @@ export async function loadFanProfile(walletAddress: string): Promise<FanMemory> 
   const namespace = namespaceForWallet(walletAddress);
 
   try {
-    const result = await client.recall({
-      query: "fan profile predictions favorite team",
-      limit: 10,
-      namespace,
-    });
+    const [profileHits, fallbackHits] = await Promise.all([
+      client.recall({
+        query: "FAN_PROFILE_JSON fan profile ledger predictions favorite team",
+        limit: 12,
+        namespace,
+      }),
+      client.recall({
+        query: `${PROFILE_PREFIX} structured profile snapshot`,
+        limit: 8,
+        namespace,
+      }),
+    ]);
 
-    for (const hit of result.results) {
-      const parsed = parseProfileFromText(hit.text);
-      if (parsed) {
-        profileCache.set(walletAddress, parsed);
-        return { ...parsed };
-      }
+    const merged = [...profileHits.results, ...fallbackHits.results];
+    const parsed = pickLatestProfile(merged);
+    if (parsed) {
+      profileCache.set(walletAddress, parsed);
+      return { ...parsed };
     }
-  } catch {
-    // fall through to empty profile
+  } catch (err) {
+    console.error("loadFanProfile recall failed:", err);
   }
 
   return empty;
 }
 
-/** In-memory first; MemWal write is fire-and-forget (never block chat stream). */
+/** Hot path: update in-process cache only — no MemWal I/O before stream. */
+export function setProfileCache(walletAddress: string, profile: FanMemory): void {
+  profileCache.set(walletAddress, profile);
+}
+
+/** @deprecated Use setProfileCache on hot path; persistProfileAndWait after stream. */
 export function persistProfileCacheOnly(
   walletAddress: string,
   profile: FanMemory,
 ): void {
-  persistProfile(walletAddress, profile);
+  setProfileCache(walletAddress, profile);
 }
 
 export function rememberSemanticLine(walletAddress: string, line: string): void {
   rememberSemantic(walletAddress, line);
 }
 
-function persistProfile(walletAddress: string, profile: FanMemory): void {
-  profileCache.set(walletAddress, profile);
+function rememberSemantic(walletAddress: string, line: string): void {
+  const client = getMemWalClient();
+  if (!client) return;
+  const namespace = namespaceForWallet(walletAddress);
+  void client.remember(line, namespace).catch((err) => {
+    console.error("rememberSemantic failed:", err);
+  });
+}
+
+/** Critical profile write — await relayer completion (post-stream only). */
+export async function persistProfileAndWait(
+  walletAddress: string,
+  profile: FanMemory,
+  timeoutMs = PERSIST_WAIT_MS,
+): Promise<void> {
+  setProfileCache(walletAddress, profile);
 
   const client = getMemWalClient();
   if (!client) return;
 
   const namespace = namespaceForWallet(walletAddress);
   const snapshot = `${PROFILE_PREFIX}${JSON.stringify(profile)}`;
-  void client.remember(snapshot, namespace).catch(() => {});
-}
 
-function rememberSemantic(walletAddress: string, line: string): void {
-  const client = getMemWalClient();
-  if (!client) return;
-  const namespace = namespaceForWallet(walletAddress);
-  void client.remember(line, namespace).catch(() => {});
+  try {
+    await client.rememberAndWait(snapshot, namespace, { timeoutMs });
+  } catch (err) {
+    console.error("persistProfileAndWait failed:", err);
+    void client.remember(snapshot, namespace).catch((fallbackErr) => {
+      console.error("persistProfileAndWait fallback remember failed:", fallbackErr);
+    });
+  }
 }
 
 export async function loadFanProfileFast(
@@ -93,7 +143,9 @@ export async function loadFanProfileFast(
   const empty = emptyFanMemory();
   const loaded = await Promise.race([
     loadFanProfile(walletAddress),
-    new Promise<FanMemory>((resolve) => setTimeout(() => resolve(empty), timeoutMs)),
+    new Promise<FanMemory>((resolve) =>
+      setTimeout(() => resolve(empty), timeoutMs),
+    ),
   ]);
   return loaded;
 }
@@ -119,7 +171,7 @@ export async function setFavoriteTeam(
   }
 
   next.favorite_team = trimmed;
-  persistProfile(walletAddress, next);
+  setProfileCache(walletAddress, next);
   rememberSemantic(
     walletAddress,
     `User supports ${trimmed}. Confidence: ${next.confidence_level}.`,
@@ -151,7 +203,7 @@ export async function addPrediction(
   };
 
   next.past_predictions = [...next.past_predictions, entry].slice(-50);
-  persistProfile(walletAddress, next);
+  setProfileCache(walletAddress, next);
   rememberSemantic(
     walletAddress,
     `Prediction: ${input.prediction} for ${input.match} — PENDING`,
@@ -176,10 +228,12 @@ export async function resolvePrediction(
     return { ...p, result: input.result };
   });
 
-  persistProfile(walletAddress, next);
+  setProfileCache(walletAddress, next);
 
   const resolved = next.past_predictions.find(
-    (p) => p.result === input.result && p.match.toLowerCase().includes(matchLower.slice(0, 8)),
+    (p) =>
+      p.result === input.result &&
+      p.match.toLowerCase().includes(matchLower.slice(0, 8)),
   );
 
   if (resolved) {
@@ -196,16 +250,26 @@ export async function resolvePrediction(
   return next;
 }
 
+/** Append roast in-memory; caller persists with persistProfileAndWait after stream. */
+export function appendRoastToProfile(
+  profile: FanMemory,
+  roast: string,
+  topics: string[] = [],
+): FanMemory {
+  const next = { ...profile };
+  next.roast_history = [...next.roast_history, roast.slice(0, 500)].slice(-20);
+  next.last_roast_topics = [...topics, ...next.last_roast_topics].slice(0, 5);
+  return next;
+}
+
 export async function appendRoast(
   walletAddress: string,
   profile: FanMemory,
   roast: string,
   topics: string[] = [],
 ): Promise<FanMemory> {
-  const next = { ...profile };
-  next.roast_history = [...next.roast_history, roast.slice(0, 500)].slice(-20);
-  next.last_roast_topics = [...topics, ...next.last_roast_topics].slice(0, 5);
-  persistProfile(walletAddress, next);
+  const next = appendRoastToProfile(profile, roast, topics);
+  setProfileCache(walletAddress, next);
   rememberSemantic(walletAddress, `Roast delivered: ${roast.slice(0, 200)}`);
   return next;
 }

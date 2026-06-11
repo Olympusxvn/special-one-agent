@@ -1,6 +1,6 @@
 import type { ParsedIntent } from "@/lib/ai/intent";
 
-import { persistProfileCacheOnly, rememberSemanticLine } from "./fan-profile";
+import { rememberSemanticLine, setProfileCache } from "./fan-profile";
 import type { ConfidenceLevel, FanMemory, Prediction } from "./types";
 
 /** Apply intent in-memory + one async MemWal enqueue — no awaits before LLM stream. */
@@ -60,6 +60,6 @@ export function applyIntentToProfile(
     });
   }
 
-  persistProfileCacheOnly(walletAddress, next);
+  setProfileCache(walletAddress, next);
   return next;
 }

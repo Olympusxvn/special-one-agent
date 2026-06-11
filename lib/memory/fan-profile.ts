@@ -1,98 +1,38 @@
 import { nanoid } from "nanoid";
 
-import { getMemWalClient, namespaceForWallet } from "./client";
-import { buildProfileFromRecallHits } from "./profile-from-recall";
 import type { ConfidenceLevel, FanMemory, Prediction } from "./types";
 import { emptyFanMemory } from "./types";
+import {
+  loadProfileFromWalrus,
+  recallForWallet,
+  rememberAndWaitForWallet,
+  rememberForWallet,
+} from "./wallet-memory";
 
 const PROFILE_PREFIX = "FAN_PROFILE_JSON:";
 
-/** Relayer indexing can take 25–35s on mainnet — do not cut this short. */
-const PERSIST_WAIT_MS = 45_000;
-
-const RESTORE_TIMEOUT_MS = 8_000;
-
 const profileCache = new Map<string, FanMemory>();
 const recallCache = new Map<string, { query: string; memories: string[] }>();
-
-async function restoreNamespaceBestEffort(
-  client: NonNullable<ReturnType<typeof getMemWalClient>>,
-  namespace: string,
-): Promise<void> {
-  try {
-    await Promise.race([
-      client.restore(namespace, 20),
-      new Promise<void>((_, reject) =>
-        setTimeout(() => reject(new Error("restore timeout")), RESTORE_TIMEOUT_MS),
-      ),
-    ]);
-  } catch {
-    // restore is best-effort — recall may still succeed
-  }
-}
 
 export async function loadFanProfile(walletAddress: string): Promise<FanMemory> {
   const cached = profileCache.get(walletAddress);
   if (cached) return { ...cached };
 
-  const client = getMemWalClient();
-  const empty = emptyFanMemory();
-
-  if (!client) {
-    return empty;
+  const profile = await loadProfileFromWalrus(walletAddress);
+  if (
+    profile.favorite_team ||
+    profile.past_predictions.length > 0 ||
+    profile.roast_history.length > 0
+  ) {
+    profileCache.set(walletAddress, profile);
   }
-
-  const namespace = namespaceForWallet(walletAddress);
-
-  try {
-    await restoreNamespaceBestEffort(client, namespace);
-
-    const [teamHits, predHits, jsonHits] = await Promise.all([
-      client.recall({
-        query: "favorite team user supports football world cup",
-        limit: 10,
-        namespace,
-      }),
-      client.recall({
-        query: "prediction score world cup match pending result",
-        limit: 15,
-        namespace,
-      }),
-      client.recall({
-        query: "FAN_PROFILE_JSON fan profile ledger predictions",
-        limit: 10,
-        namespace,
-      }),
-    ]);
-
-    const merged = [
-      ...teamHits.results,
-      ...predHits.results,
-      ...jsonHits.results,
-    ];
-    const profile = buildProfileFromRecallHits(merged);
-
-    if (
-      profile.favorite_team ||
-      profile.past_predictions.length > 0 ||
-      profile.roast_history.length > 0
-    ) {
-      profileCache.set(walletAddress, profile);
-      return { ...profile };
-    }
-  } catch (err) {
-    console.error("loadFanProfile recall failed:", err);
-  }
-
-  return empty;
+  return { ...profile };
 }
 
-/** Hot path: update in-process cache only — no MemWal I/O before stream. */
 export function setProfileCache(walletAddress: string, profile: FanMemory): void {
   profileCache.set(walletAddress, profile);
 }
 
-/** @deprecated Use setProfileCache on hot path; persistProfileAndWait after stream. */
 export function persistProfileCacheOnly(
   walletAddress: string,
   profile: FanMemory,
@@ -101,58 +41,43 @@ export function persistProfileCacheOnly(
 }
 
 export function rememberSemanticLine(walletAddress: string, line: string): void {
-  rememberSemantic(walletAddress, line);
+  rememberForWallet(walletAddress, line);
 }
 
-function rememberSemantic(walletAddress: string, line: string): void {
-  const client = getMemWalClient();
-  if (!client) return;
-  const namespace = namespaceForWallet(walletAddress);
-  void client.remember(line, namespace).catch((err) => {
-    console.error("rememberSemantic failed:", err);
-  });
-}
-
-/** Queue profile snapshot immediately (202) — survives serverless early freeze. */
 export function persistProfileEnqueue(
   walletAddress: string,
   profile: FanMemory,
 ): void {
   setProfileCache(walletAddress, profile);
-
-  const client = getMemWalClient();
-  if (!client) return;
-
-  const namespace = namespaceForWallet(walletAddress);
-  const snapshot = `${PROFILE_PREFIX}${JSON.stringify(profile)}`;
-
-  void client.remember(snapshot, namespace).catch((err) => {
-    console.error("persistProfileEnqueue failed:", err);
-  });
+  if (profile.favorite_team) {
+    rememberForWallet(
+      walletAddress,
+      `Favorite team: ${profile.favorite_team}. User supports ${profile.favorite_team} for World Cup 2026.`,
+    );
+  }
+  rememberForWallet(
+    walletAddress,
+    `${PROFILE_PREFIX}${JSON.stringify(profile)}`,
+  );
 }
 
-/** Critical profile write — await relayer completion (post-stream only). */
 export async function persistProfileAndWait(
   walletAddress: string,
   profile: FanMemory,
-  timeoutMs = PERSIST_WAIT_MS,
 ): Promise<void> {
   setProfileCache(walletAddress, profile);
 
-  const client = getMemWalClient();
-  if (!client) return;
-
-  const namespace = namespaceForWallet(walletAddress);
-  const snapshot = `${PROFILE_PREFIX}${JSON.stringify(profile)}`;
-
-  try {
-    await client.rememberAndWait(snapshot, namespace, { timeoutMs });
-  } catch (err) {
-    console.error("persistProfileAndWait failed:", err);
-    void client.remember(snapshot, namespace).catch((fallbackErr) => {
-      console.error("persistProfileAndWait fallback remember failed:", fallbackErr);
-    });
+  if (profile.favorite_team) {
+    await rememberAndWaitForWallet(
+      walletAddress,
+      `Favorite team: ${profile.favorite_team}. User supports ${profile.favorite_team} for World Cup 2026.`,
+    );
   }
+
+  await rememberAndWaitForWallet(
+    walletAddress,
+    `${PROFILE_PREFIX}${JSON.stringify(profile)}`,
+  );
 }
 
 export async function loadFanProfileFast(
@@ -186,7 +111,7 @@ export async function setFavoriteTeam(
     next.favorite_team.toLowerCase() !== trimmed.toLowerCase()
   ) {
     next.flip_flop_count += 1;
-    rememberSemantic(
+    rememberForWallet(
       walletAddress,
       `Flip-flop: switched from ${next.favorite_team} to ${trimmed}`,
     );
@@ -194,7 +119,7 @@ export async function setFavoriteTeam(
 
   next.favorite_team = trimmed;
   setProfileCache(walletAddress, next);
-  rememberSemantic(
+  rememberForWallet(
     walletAddress,
     `User supports ${trimmed}. Confidence: ${next.confidence_level}.`,
   );
@@ -226,7 +151,7 @@ export async function addPrediction(
 
   next.past_predictions = [...next.past_predictions, entry].slice(-50);
   setProfileCache(walletAddress, next);
-  rememberSemantic(
+  rememberForWallet(
     walletAddress,
     `Prediction: ${input.prediction} for ${input.match} — PENDING`,
   );
@@ -261,7 +186,7 @@ export async function resolvePrediction(
   if (resolved) {
     const wrong =
       resolved.prediction.toLowerCase() !== input.result.toLowerCase();
-    rememberSemantic(
+    rememberForWallet(
       walletAddress,
       wrong
         ? `Prediction WRONG: said ${resolved.prediction}, actual ${input.result}`
@@ -272,7 +197,6 @@ export async function resolvePrediction(
   return next;
 }
 
-/** Append roast in-memory; caller persists with persistProfileAndWait after stream. */
 export function appendRoastToProfile(
   profile: FanMemory,
   roast: string,
@@ -292,14 +216,13 @@ export async function appendRoast(
 ): Promise<FanMemory> {
   const next = appendRoastToProfile(profile, roast, topics);
   setProfileCache(walletAddress, next);
-  rememberSemantic(walletAddress, `Roast delivered: ${roast.slice(0, 200)}`);
+  rememberForWallet(walletAddress, `Roast delivered: ${roast.slice(0, 200)}`);
   return next;
 }
 
 export interface RecallMemoriesOptions {
   limit?: number;
   timeoutMs?: number;
-  /** Reuse last recall in warm serverless instance when query unchanged. */
   useCache?: boolean;
 }
 
@@ -333,24 +256,14 @@ export async function recallMemories(
     }
   }
 
-  const client = getMemWalClient();
-  if (!client) return [];
-
   try {
     const result = await Promise.race([
-      client.recall({
-        query: normalizedQuery,
-        limit: limit + 3,
-        namespace: namespaceForWallet(walletAddress),
-      }),
-      new Promise<{ results: { text: string }[] }>((resolve) =>
-        setTimeout(() => resolve({ results: [] }), timeoutMs),
+      recallForWallet(walletAddress, normalizedQuery, limit + 3),
+      new Promise<string[]>((resolve) =>
+        setTimeout(() => resolve([]), timeoutMs),
       ),
     ]);
-    const memories = trimRecallLines(
-      result.results.map((r) => r.text),
-      limit,
-    );
+    const memories = trimRecallLines(result, limit);
 
     if (useCache) {
       recallCache.set(walletAddress, { query: normalizedQuery, memories });

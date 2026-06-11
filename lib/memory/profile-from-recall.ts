@@ -17,7 +17,9 @@ function parseTeamFromText(text: string): string | null {
   const patterns = [
     /User supports ([A-Za-z][A-Za-z\s'-]+?)(?:\.|,|!| in\b|$)/i,
     /supports ([A-Za-z][A-Za-z\s'-]+?)(?:\.|,|!| in the World Cup)/i,
-    /favorite team(?: is)?\s+([A-Za-z][A-Za-z\s'-]+)/i,
+    /favorite team(?: is)?:?\s+([A-Za-z][A-Za-z\s'-]+)/i,
+    /User said: ["']?I support ([A-Za-z][A-Za-z\s'-]+)/i,
+    /User said: ["'][^"']*support[s]?\s+([A-Za-z][A-Za-z\s'-]+)/i,
   ];
   for (const re of patterns) {
     const m = text.match(re);

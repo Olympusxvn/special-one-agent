@@ -72,6 +72,7 @@ export function ChatContainer({
     return pickModelForProviders(connected, buildLlmOptions(connected, serverLlm));
   });
   const [profile, setProfile] = useState<FanMemory | null>(null);
+  const [walrusMemories, setWalrusMemories] = useState<string[]>([]);
   const [profileLoading, setProfileLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const prevChatStatus = useRef<string>("ready");
@@ -165,23 +166,46 @@ export function ChatContainer({
 
     setProfileLoading(true);
     try {
-      const res = await fetch("/api/memory/profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: account.address,
-          authMessage: auth.message,
-          authSignature: auth.signature,
-        }),
+      const body = JSON.stringify({
+        walletAddress: account.address,
+        authMessage: auth.message,
+        authSignature: auth.signature,
+        query: "favorite team supports football world cup predictions bad takes",
       });
-      if (res.ok) {
-        const data = (await res.json()) as { profile: FanMemory };
-        const local =
-          loadCachedFanProfile(account.address) ?? emptyFanMemory();
-        const merged = mergeFanProfiles(local, data.profile);
-        setProfile(merged);
-        saveCachedFanProfile(account.address, merged);
+
+      const [profileRes, notebookRes] = await Promise.all([
+        fetch("/api/memory/profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        }),
+        fetch("/api/memory/notebook", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+        }),
+      ]);
+
+      const local =
+        loadCachedFanProfile(account.address) ?? emptyFanMemory();
+      let merged = local;
+
+      if (notebookRes.ok) {
+        const notebook = (await notebookRes.json()) as {
+          memories: string[];
+          profile: FanMemory;
+        };
+        setWalrusMemories(notebook.memories ?? []);
+        merged = mergeFanProfiles(merged, notebook.profile);
       }
+
+      if (profileRes.ok) {
+        const data = (await profileRes.json()) as { profile: FanMemory };
+        merged = mergeFanProfiles(merged, data.profile);
+      }
+
+      setProfile(merged);
+      saveCachedFanProfile(account.address, merged);
     } finally {
       setProfileLoading(false);
     }
@@ -488,6 +512,7 @@ export function ChatContainer({
 
         <PredictionCard
           profile={profile}
+          walrusMemories={walrusMemories}
           profileLoading={profileLoading}
           memWalLive={memWalLive}
           walletAddress={account.address}

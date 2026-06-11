@@ -71,8 +71,22 @@ function PredictionRow({ p, index }: { p: Prediction; index: number }) {
   );
 }
 
+function teamFromMemories(memories: string[]): string | null {
+  for (const line of memories) {
+    const support = line.match(
+      /(?:Favorite team:|User supports|I support)\s*([A-Za-z][A-Za-z\s'-]+?)(?:\.|,|!| in\b|$)/i,
+    );
+    if (support?.[1]) {
+      const team = support[1].trim();
+      if (team.length >= 3 && team.length <= 28) return team;
+    }
+  }
+  return null;
+}
+
 export function PredictionCard({
   profile,
+  walrusMemories = [],
   profileLoading,
   memWalLive,
   walletAddress,
@@ -80,12 +94,15 @@ export function PredictionCard({
   syncing,
 }: {
   profile: FanMemory | null;
+  walrusMemories?: string[];
   profileLoading?: boolean;
   memWalLive?: boolean;
   walletAddress?: string;
   onSync: () => void;
   syncing: boolean;
 }) {
+  const teamLabel =
+    profile?.favorite_team || teamFromMemories(walrusMemories) || null;
   const pending =
     profile?.past_predictions.filter((p) => p.result === null) ?? [];
   const resolved = [...(profile?.past_predictions ?? [])]
@@ -111,29 +128,29 @@ export function PredictionCard({
         chat turn and on refresh.
       </p>
 
-      {profileLoading && !profile?.favorite_team && pending.length === 0 && (
+      {profileLoading && !teamLabel && pending.length === 0 && (
         <p className="mb-3 animate-pulse text-xs text-foreground/50">
           Loading your Walrus record…
         </p>
       )}
 
-      {profile?.favorite_team ? (
+      {teamLabel ? (
         <div className="mb-3 rounded-lg border border-gold/15 bg-gold/5 px-2.5 py-2 text-xs">
           <p className="text-foreground/70">
             Team:{" "}
-            <span className="font-semibold text-pitch">
-              {profile.favorite_team}
-            </span>
+            <span className="font-semibold text-pitch">{teamLabel}</span>
           </p>
-          {profile.flip_flop_count > 0 && (
+          {profile && profile.flip_flop_count > 0 && (
             <p className="mt-0.5 text-roast">
               {profile.flip_flop_count} bandwagon flip-flop
               {profile.flip_flop_count > 1 ? "s" : ""} 🤡
             </p>
           )}
-          <p className="mt-0.5 text-foreground/50">
-            Confidence: {profile.confidence_level}
-          </p>
+          {profile && (
+            <p className="mt-0.5 text-foreground/50">
+              Confidence: {profile.confidence_level}
+            </p>
+          )}
         </div>
       ) : (
         !profileLoading && (
@@ -141,6 +158,24 @@ export function PredictionCard({
             No team yet — tell the Special One who you support.
           </p>
         )
+      )}
+
+      {walrusMemories.length > 0 && (
+        <section className="mb-3">
+          <h4 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-foreground/45">
+            Walrus recall
+          </h4>
+          <ul className="max-h-28 space-y-1 overflow-y-auto">
+            {walrusMemories.slice(0, 5).map((memory, index) => (
+              <li
+                key={`${index}-${memory.slice(0, 24)}`}
+                className="rounded border border-gold/10 bg-background/30 px-2 py-1 text-[10px] leading-snug text-foreground/65"
+              >
+                {memory}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">

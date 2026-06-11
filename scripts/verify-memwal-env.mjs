@@ -26,7 +26,9 @@ function loadEnvFile() {
 
 loadEnvFile();
 
-const key = process.env.MEMWAL_PRIVATE_KEY?.trim();
+const key =
+  process.env.MEMWAL_PRIVATE_KEY?.trim() ||
+  process.env.MEMWAL_DELEGATE_KEY?.trim();
 const accountId = process.env.MEMWAL_ACCOUNT_ID?.trim();
 const serverUrl =
   process.env.MEMWAL_SERVER_URL?.trim() || "https://relayer.memory.walrus.xyz";

@@ -25,12 +25,12 @@ import { applyIntentToProfile } from "@/lib/memory/apply-intent";
 import {
   appendRoastToProfile,
   loadFanProfileFast,
-  persistProfileAndWait,
   persistProfileEnqueue,
   recallMemories,
   rememberSemanticLine,
 } from "@/lib/memory/fan-profile";
 import { intentMutatesProfile } from "@/lib/memory/merge-intent";
+import { rememberUserTurn } from "@/lib/memory/wallet-memory";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 
 export const maxDuration = 60;
@@ -140,7 +140,8 @@ export async function POST(req: Request) {
         const finalize = async () => {
           const topics = extractRoastTopics(text);
           const withRoast = appendRoastToProfile(profile, text, topics);
-          await persistProfileAndWait(walletAddress, withRoast);
+          await rememberUserTurn(walletAddress, lastUserText);
+          persistProfileEnqueue(walletAddress, withRoast);
           rememberSemanticLine(
             walletAddress,
             `Roast delivered: ${text.slice(0, 200)}`,

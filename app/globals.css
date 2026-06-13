@@ -2,29 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Walrus.xyz Design System — dark-first, premium minimal */
+
 :root {
-  --background: #0a1628;
-  --foreground: #f0f4f8;
-  --press: #0d1b2e;
-  --press-card: #122038;
-  --press-border: #1e3a5f;
-  --midnight: #060e1a;
-  --pitch: #00c853;
-  --pitch-dark: #008f3a;
-  --pitch-muted: rgba(0, 200, 83, 0.12);
-  --gold: #f5c842;
-  --gold-bright: #ffe082;
-  --gold-muted: rgba(245, 200, 66, 0.15);
-  --roast: #ff4757;
-  --accent-red: #e63946;
-  --stadium-glow: rgba(0, 200, 83, 0.18);
-  --trophy-glow: rgba(245, 200, 66, 0.25);
-  /* FIFA World Cup 2026 official host-nation palette */
-  --wc-navy: #1b365d;
-  --wc-red: #c8102e;
-  --wc-green: #006747;
-  --wc-white: #ffffff;
-  --wc-black: #0a0a0a;
+  /* Brand */
+  --brand-purple: #613dff;
+  --light-purple: #cab1ff;
+  --electric-cyan: #98efe4;
+  --bright-cyan: #83efe1;
+  --soft-blue: #a1c8ff;
+  --bright-blue: #007aff;
+
+  /* Luxury WC 2026 — metallic accents */
+  --gold: #ffd700;
+  --gold-soft: #f3cf6b;
+  --gold-deep: #b8860b;
+  --platinum: #e5e4e2;
+  --champagne: #f7e7ce;
+  --obsidian: #07070b;
+  --midnight: #0a0e1a;
+
+  /* Neutrals */
+  --off-white: #faf8f5;
+  --pure-black: #000000;
+  --dark-charcoal: #2b2d31;
+  --medium-dark: #1c2228;
+  --warm-gray: #222222;
+  --medium-gray: #53575a;
+  --light-gray: #8e9294;
+  --border-gray: #b0b4b6;
+  --separator: #dadad6;
+  --card-border: #f3f2f2;
+
+  /* Spacing scale (8px base) */
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 20px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 40px;
+  --space-8: 48px;
+}
+
+/* Dark mode (default) */
+:root,
+.dark {
+  --background: #000000;
+  --foreground: #faf8f5;
+  --text-muted: #8e9294;
+  --text-tertiary: #53575a;
+  --surface: rgba(0, 0, 0, 0);
+  --surface-elevated: #1c2228;
+  --border-default: rgba(243, 242, 242, 0.12);
+  --border-subtle: rgba(250, 248, 245, 0.1);
+  --nav-bg: rgba(0, 0, 0, 0.95);
+  --input-bg: #ffffff;
+  --input-text: #222222;
+  --input-border: #b0b4b6;
+  --bubble-user: rgba(97, 61, 255, 0.08);
+  --bubble-agent: rgba(28, 34, 40, 0.6);
+  --accent-subtle: rgba(152, 239, 228, 0.12);
+  --purple-subtle: rgba(97, 61, 255, 0.1);
+
+  /* Luxury glass surfaces (dark) */
+  --glass-bg: rgba(18, 18, 28, 0.55);
+  --glass-bg-strong: rgba(12, 12, 20, 0.72);
+  --glass-border: rgba(255, 215, 0, 0.18);
+  --glass-highlight: rgba(255, 255, 255, 0.08);
+  --gold-glow: rgba(255, 215, 0, 0.28);
+  --text-gold: var(--gold-soft);
+}
+
+/* Light mode */
+.light {
+  --background: #faf8f5;
+  --foreground: #222222;
+  --text-muted: #53575a;
+  --text-tertiary: #8e9294;
+  --surface: rgba(255, 255, 255, 0.6);
+  --surface-elevated: #ffffff;
+  --border-default: #dadad6;
+  --border-subtle: rgba(34, 34, 34, 0.08);
+  --nav-bg: rgba(250, 248, 245, 0.92);
+  --input-bg: #ffffff;
+  --input-text: #222222;
+  --input-border: #b0b4b6;
+  --bubble-user: rgba(97, 61, 255, 0.06);
+  --bubble-agent: rgba(250, 248, 245, 0.9);
+  --accent-subtle: rgba(152, 239, 228, 0.25);
+  --purple-subtle: rgba(97, 61, 255, 0.06);
+
+  /* Luxury glass surfaces (light) */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(184, 134, 11, 0.28);
+  --glass-highlight: rgba(255, 255, 255, 0.6);
+  --gold-glow: rgba(184, 134, 11, 0.22);
+  --text-gold: var(--gold-deep);
 }
 
 html {
@@ -33,260 +108,725 @@ html {
 
 body {
   color: var(--foreground);
-  background: var(--midnight);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  background: var(--background);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
   min-height: 100vh;
-  background-image:
-    /* confetti dots */
-    radial-gradient(circle at 8% 12%, rgba(245, 200, 66, 0.35) 1px, transparent 1px),
-    radial-gradient(circle at 92% 8%, rgba(255, 71, 87, 0.3) 1px, transparent 1px),
-    radial-gradient(circle at 15% 88%, rgba(255, 255, 255, 0.2) 1px, transparent 1px),
-    radial-gradient(circle at 85% 75%, rgba(0, 200, 83, 0.35) 1px, transparent 1px),
-    radial-gradient(circle at 50% 50%, rgba(245, 200, 66, 0.15) 1px, transparent 1px),
-    radial-gradient(circle at 72% 22%, rgba(255, 255, 255, 0.15) 1px, transparent 1px),
-    /* stadium floodlights */
-    radial-gradient(ellipse 80% 50% at 50% -10%, var(--stadium-glow), transparent 60%),
-    radial-gradient(ellipse 60% 40% at 10% 100%, rgba(0, 200, 83, 0.08), transparent 50%),
-    radial-gradient(ellipse 60% 40% at 90% 100%, rgba(245, 200, 66, 0.06), transparent 50%),
-    /* pitch lines subtle */
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 79px,
-      rgba(0, 200, 83, 0.04) 79px,
-      rgba(0, 200, 83, 0.04) 80px
-    ),
-    linear-gradient(180deg, var(--background) 0%, var(--midnight) 100%);
-  background-size:
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 100%,
-    100% 80px,
-    100% 100%;
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+}
 
-  .shadow-glow {
-    box-shadow:
-      0 0 20px var(--trophy-glow),
-      0 0 40px rgba(0, 200, 83, 0.08);
+@layer components {
+  /* Typography hierarchy */
+  .walrus-display {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 500;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    color: var(--foreground);
   }
 
-  .shadow-glow-pitch {
-    box-shadow:
-      0 0 16px rgba(0, 200, 83, 0.25),
-      0 0 32px rgba(0, 200, 83, 0.1);
+  .walrus-heading {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.5;
+    color: var(--foreground);
   }
 
-  .shadow-glow-gold {
-    box-shadow:
-      0 0 20px var(--trophy-glow),
-      0 4px 24px rgba(245, 200, 66, 0.15);
+  .walrus-body {
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--foreground);
   }
 
-  .gradient-text-gold {
-    background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold) 50%, #d4a017 100%);
+  .walrus-caption {
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.21;
+    color: var(--text-muted);
+  }
+
+  .walrus-label {
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Navigation */
+  .walrus-nav {
+    background: var(--nav-bg);
+    border-bottom: 1px solid var(--border-subtle);
+    backdrop-filter: blur(12px);
+  }
+
+  /* Buttons — Walrus spec */
+  .btn-walrus-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--foreground);
+    background: transparent;
+    border: 2px solid var(--border-subtle);
+    border-radius: 26px;
+    transition:
+      border-color 0.2s ease,
+      color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .btn-walrus-primary:hover:not(:disabled) {
+    border-color: rgba(250, 248, 245, 0.3);
+    color: #ffffff;
+  }
+
+  .dark .btn-walrus-primary:hover:not(:disabled) {
+    color: #ffffff;
+  }
+
+  .light .btn-walrus-primary:hover:not(:disabled) {
+    color: var(--warm-gray);
+    border-color: rgba(34, 34, 34, 0.2);
+  }
+
+  .btn-walrus-primary:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .btn-walrus-accent {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--off-white);
+    background: var(--brand-purple);
+    border: none;
+    border-radius: 26px;
+    transition: opacity 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-walrus-accent:hover:not(:disabled) {
+    opacity: 0.92;
+    box-shadow: 0 0 0 3px rgba(97, 61, 255, 0.15);
+  }
+
+  .btn-ghost-icon {
+    border: 1px solid var(--border-subtle);
+    background: transparent;
+    color: var(--foreground);
+  }
+
+  .btn-ghost-icon:hover {
+    border-color: rgba(250, 248, 245, 0.25);
+    background: var(--purple-subtle);
+  }
+
+  /* Cards */
+  .walrus-card {
+    background: transparent;
+    border: 1px solid var(--border-default);
+    border-radius: 0;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .walrus-card:hover {
+    border-color: var(--separator);
+    background: rgba(250, 248, 245, 0.02);
+  }
+
+  .light .walrus-card:hover {
+    background: rgba(97, 61, 255, 0.03);
+  }
+
+  /* Chat bubbles */
+  .bubble-walrus-user {
+    background: var(--bubble-user);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+  }
+
+  .bubble-walrus-agent {
+    background: var(--bubble-agent);
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+  }
+
+  .bubble-walrus-agent-hot {
+    border-color: rgba(97, 61, 255, 0.35);
+    box-shadow: 0 0 0 1px rgba(152, 239, 228, 0.08);
+  }
+
+  /* Inputs */
+  .walrus-input {
+    min-height: 44px;
+    padding: 12px 16px;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--input-text);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 4px;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .walrus-input::placeholder {
+    color: var(--light-gray);
+  }
+
+  .walrus-input:focus {
+    outline: none;
+    border-color: var(--brand-purple);
+    box-shadow: 0 0 0 3px rgba(97, 61, 255, 0.1);
+  }
+
+  .walrus-input:disabled {
+    background: #f3f2f2;
+    color: var(--light-gray);
+    cursor: not-allowed;
+  }
+
+  /* Badge */
+  .walrus-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    border: 1px solid var(--border-subtle);
+    border-radius: 26px;
+    background: transparent;
+  }
+
+  .walrus-badge-live {
+    color: var(--electric-cyan);
+    border-color: rgba(152, 239, 228, 0.25);
+    background: var(--accent-subtle);
+  }
+
+  /* Toast */
+  .walrus-toast {
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-default);
+    box-shadow: rgba(0, 0, 0, 0.1) 0px 10px 15px -3px;
+  }
+
+  /* Avatar ring — premium Walrus */
+  .walrus-avatar-ring {
+    border: 1px solid var(--border-default);
+    box-shadow: rgb(0, 0, 0) 0px 0px 24px -5px;
+  }
+
+  .walrus-avatar-ring-premium {
+    border: 1px solid rgba(97, 61, 255, 0.35);
+    box-shadow:
+      0 0 0 1px rgba(152, 239, 228, 0.08),
+      0 0 24px -4px rgba(97, 61, 255, 0.2);
+  }
+
+  /* Progress */
+  .walrus-progress-track {
+    height: 4px;
+    background: var(--border-subtle);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .walrus-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand-purple), var(--electric-cyan));
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+
+  .walrus-quote {
+    font-style: italic;
+    color: var(--light-purple);
+    font-size: 0.875rem;
+  }
+
+  /* ===================================================================
+     LUXURY WORLD CUP 2026 — "VIP lounge" component layer
+     Glassmorphism is honest: backdrop-filter + layered border + highlight,
+     with a solid-fill fallback for prefers-reduced-transparency below.
+     =================================================================== */
+
+  .luxe-display {
+    font-family: var(--font-display), var(--font-inter), -apple-system,
+      BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.02;
+    color: var(--foreground);
+  }
+
+  .luxe-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--text-gold);
+  }
+
+  /* Metallic gold gradient text — restrained, not neon */
+  .luxe-gold-text {
+    background: linear-gradient(
+      92deg,
+      var(--gold-deep) 0%,
+      var(--gold) 38%,
+      var(--champagne) 60%,
+      var(--gold-soft) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    color: transparent;
   }
 
-  .gradient-text-festive {
-    background: linear-gradient(
-      135deg,
-      var(--gold-bright) 0%,
-      var(--gold) 35%,
-      var(--pitch) 70%,
-      var(--gold-bright) 100%
-    );
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: shimmer-text 4s ease-in-out infinite;
-  }
-
-  .festive-border {
-    border: 1px solid transparent;
-    background:
-      linear-gradient(var(--press-card), var(--press-card)) padding-box,
-      linear-gradient(135deg, var(--gold), var(--pitch), var(--gold-bright)) border-box;
-  }
-
-  .festive-card {
-    background: linear-gradient(
-      145deg,
-      rgba(18, 32, 56, 0.95) 0%,
-      rgba(13, 27, 46, 0.98) 100%
-    );
-    border: 1px solid rgba(245, 200, 66, 0.2);
-    box-shadow:
-      0 4px 24px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  }
-
-  .btn-festive {
-    background: linear-gradient(135deg, var(--gold) 0%, #e8b020 50%, var(--gold-bright) 100%);
-    background-size: 200% auto;
-    color: var(--midnight);
-    transition: background-position 0.4s ease, transform 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .btn-festive:hover {
-    background-position: right center;
-    box-shadow: 0 0 24px var(--trophy-glow);
-    transform: translateY(-1px);
-  }
-
-  .btn-outline-festive {
-    border: 1px solid rgba(245, 200, 66, 0.45);
-    background: rgba(245, 200, 66, 0.06);
-    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-  }
-
-  .btn-outline-festive:hover {
-    background: rgba(245, 200, 66, 0.12);
-    border-color: var(--gold);
-    box-shadow: 0 0 16px rgba(245, 200, 66, 0.15);
-  }
-
-  .badge-festive {
-    border: 1px solid rgba(245, 200, 66, 0.25);
-    background: rgba(0, 200, 83, 0.06);
-    backdrop-filter: blur(4px);
-  }
-
-  .stadium-header {
-    background: linear-gradient(
-      180deg,
-      rgba(13, 27, 46, 0.97) 0%,
-      rgba(10, 22, 40, 0.92) 100%
-    );
-    border-bottom: 1px solid rgba(245, 200, 66, 0.15);
-    box-shadow:
-      0 4px 24px rgba(0, 0, 0, 0.25),
-      0 1px 0 rgba(0, 200, 83, 0.1);
-  }
-
-  .avatar-ring {
-    box-shadow:
-      0 0 0 3px var(--gold),
-      0 0 20px var(--trophy-glow),
-      0 0 40px rgba(0, 200, 83, 0.15);
-    animation: pulse-ring 3s ease-in-out infinite;
-  }
-
-  .pitch-accent-bar {
-    height: 3px;
-    background: linear-gradient(90deg, var(--pitch-dark), var(--pitch), var(--gold), var(--pitch));
-    background-size: 200% 100%;
-    animation: gradient-shift 3s ease infinite;
-  }
-
-  .wc-host-stripe {
-    height: 2px;
+  .luxe-hairline {
+    height: 1px;
+    width: 100%;
     background: linear-gradient(
       90deg,
-      var(--wc-navy) 0%,
-      var(--wc-navy) 33%,
-      var(--wc-red) 50%,
-      var(--wc-green) 66%,
-      var(--wc-green) 100%
+      transparent,
+      var(--glass-border),
+      transparent
     );
   }
 
-  .logo-badge {
-    border-radius: 0.75rem;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(27, 54, 93, 0.25);
-    padding: 0.375rem 0.5rem;
+  /* Glass card */
+  .luxe-glass {
+    position: relative;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 22px;
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
     box-shadow:
-      0 4px 16px rgba(0, 0, 0, 0.25),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+      inset 0 1px 0 var(--glass-highlight),
+      0 18px 40px -24px rgba(0, 0, 0, 0.7);
+    transition:
+      border-color 0.3s ease,
+      box-shadow 0.3s ease,
+      transform 0.3s ease;
   }
-}
 
-@keyframes shimmer-text {
-  0%,
-  100% {
-    background-position: 0% center;
+  .luxe-glass-strong {
+    background: var(--glass-bg-strong);
   }
-  50% {
-    background-position: 100% center;
-  }
-}
 
-@keyframes pulse-ring {
-  0%,
-  100% {
+  .luxe-glass:hover {
+    border-color: var(--gold-glow);
     box-shadow:
-      0 0 0 3px var(--gold),
-      0 0 20px var(--trophy-glow),
-      0 0 40px rgba(0, 200, 83, 0.15);
+      inset 0 1px 0 var(--glass-highlight),
+      0 0 0 1px var(--gold-glow),
+      0 22px 50px -26px rgba(0, 0, 0, 0.8),
+      0 0 40px -12px var(--gold-glow);
   }
-  50% {
+
+  /* Primary gold button */
+  .btn-luxe {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 28px;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #1a1405;
+    background: linear-gradient(
+      135deg,
+      var(--gold-soft) 0%,
+      var(--gold) 50%,
+      var(--gold-deep) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 999px;
+    box-shadow: 0 10px 30px -12px var(--gold-glow);
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease,
+      filter 0.25s ease;
+  }
+
+  .btn-luxe:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
     box-shadow:
-      0 0 0 3px var(--gold-bright),
-      0 0 28px var(--trophy-glow),
-      0 0 50px rgba(0, 200, 83, 0.25);
+      0 14px 38px -10px var(--gold-glow),
+      0 0 0 4px rgba(255, 215, 0, 0.12);
+  }
+
+  /* Secondary glass / outline button */
+  .btn-luxe-ghost {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--foreground);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition:
+      border-color 0.25s ease,
+      color 0.25s ease,
+      box-shadow 0.25s ease,
+      transform 0.25s ease;
+  }
+
+  .btn-luxe-ghost:hover {
+    transform: translateY(-2px);
+    border-color: var(--gold-glow);
+    color: var(--text-gold);
+    box-shadow: 0 0 30px -14px var(--gold-glow);
+  }
+
+  /* Glass flag badge — luxe container for a nation flag */
+  .luxe-flag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    font-size: 1.35rem;
+    line-height: 1;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 8px 22px -14px rgba(0, 0, 0, 0.8);
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease,
+      border-color 0.3s ease;
+  }
+
+  .luxe-flag:hover {
+    transform: translateY(-3px) scale(1.04);
+    border-color: var(--gold-glow);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 0 26px -8px var(--gold-glow);
+  }
+
+  /* Glass chip / badge */
+  .luxe-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--foreground);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .luxe-chip-gold {
+    color: var(--text-gold);
+    border-color: var(--gold-glow);
+  }
+
+  /* Nav link */
+  .luxe-navlink {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    border-radius: 999px;
+    border: 1px solid transparent;
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease,
+      background 0.2s ease;
+  }
+
+  .luxe-navlink:hover {
+    color: var(--text-gold);
+    border-color: var(--gold-glow);
+    background: rgba(255, 215, 0, 0.06);
+  }
+
+  .luxe-navlink-active {
+    color: var(--text-gold);
+    border-color: var(--gold-glow);
+    background: rgba(255, 215, 0, 0.08);
+  }
+
+  /* Gold-skinned wrapper for the dapp-kit ConnectButton */
+  .luxe-connect button {
+    padding: 12px 28px !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+    color: #1a1405 !important;
+    background: linear-gradient(
+      135deg,
+      var(--gold-soft) 0%,
+      var(--gold) 50%,
+      var(--gold-deep) 100%
+    ) !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: 999px !important;
+    box-shadow: 0 10px 30px -12px var(--gold-glow) !important;
+    transition:
+      transform 0.25s ease,
+      box-shadow 0.25s ease,
+      filter 0.25s ease !important;
+  }
+
+  .luxe-connect button:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    box-shadow:
+      0 14px 38px -10px var(--gold-glow),
+      0 0 0 4px rgba(255, 215, 0, 0.12) !important;
   }
 }
 
-@keyframes gradient-shift {
-  0%,
+/* Honesty rule: solid fallback when the OS disables transparency */
+@media (prefers-reduced-transparency: reduce) {
+  .luxe-glass,
+  .luxe-glass-strong,
+  .btn-luxe-ghost,
+  .luxe-flag,
+  .luxe-chip {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--surface-elevated);
+  }
+}
+
+/* Atmospheric background */
+.walrus-bg-gradient {
+  background: var(--background);
+}
+
+.dark .walrus-bg-gradient {
+  background: linear-gradient(
+    165deg,
+    #000000 0%,
+    #0a0812 40%,
+    #000000 100%
+  );
+}
+
+.light .walrus-bg-gradient {
+  background: linear-gradient(
+    165deg,
+    #faf8f5 0%,
+    #f5f3ef 50%,
+    #faf8f5 100%
+  );
+}
+
+.walrus-bg-glow {
+  background:
+    radial-gradient(
+      ellipse 70% 50% at 80% 0%,
+      rgba(97, 61, 255, 0.08),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 10% 90%,
+      rgba(152, 239, 228, 0.05),
+      transparent 50%
+    );
+}
+
+.light .walrus-bg-glow {
+  background:
+    radial-gradient(
+      ellipse 70% 50% at 80% 0%,
+      rgba(97, 61, 255, 0.04),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 10% 90%,
+      rgba(152, 239, 228, 0.08),
+      transparent 50%
+    );
+}
+
+/* Luxury obsidian base + gold/cool stadium-light mesh */
+.luxe-bg-base {
+  background: var(--background);
+}
+
+.dark .luxe-bg-base {
+  background:
+    radial-gradient(
+      ellipse 80% 55% at 50% -10%,
+      rgba(255, 215, 0, 0.06),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 85% 20%,
+      rgba(97, 61, 255, 0.08),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 70% 60% at 10% 90%,
+      rgba(152, 239, 228, 0.05),
+      transparent 55%
+    ),
+    linear-gradient(180deg, var(--obsidian) 0%, var(--midnight) 55%, var(--obsidian) 100%);
+}
+
+.light .luxe-bg-base {
+  background:
+    radial-gradient(
+      ellipse 80% 55% at 50% -10%,
+      rgba(184, 134, 11, 0.08),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 60% 50% at 85% 20%,
+      rgba(97, 61, 255, 0.05),
+      transparent 55%
+    ),
+    linear-gradient(180deg, #faf8f5 0%, #f4f1ec 60%, #faf8f5 100%);
+}
+
+/* Fine vertical "stadium beam" lines — very subtle */
+.luxe-bg-beams {
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0px,
+    transparent 78px,
+    var(--glass-border) 79px,
+    transparent 80px
+  );
+  opacity: 0.35;
+  mask-image: radial-gradient(ellipse 70% 80% at 50% 30%, #000 30%, transparent 80%);
+  -webkit-mask-image: radial-gradient(
+    ellipse 70% 80% at 50% 30%,
+    #000 30%,
+    transparent 80%
+  );
+}
+
+@keyframes luxe-sheen {
+  0% {
+    transform: translateX(-120%);
+  }
   100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
+    transform: translateX(120%);
   }
 }
 
-/* Chat + LLM key inputs — force readable text on dark background */
-.chat-input {
-  border: 1px solid var(--press-border);
-  background-color: var(--press-card);
+.animate-luxe-sheen {
+  animation: luxe-sheen 6s ease-in-out infinite;
+}
+
+/* ---- Live match indicator ---- */
+@keyframes luxe-live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 64, 64, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(255, 64, 64, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 64, 64, 0);
+  }
+}
+
+.luxe-live-dot {
+  display: inline-block;
+  height: 8px;
+  width: 8px;
+  border-radius: 999px;
+  background: #ff4040;
+  animation: luxe-live-pulse 1.6s ease-out infinite;
+}
+
+.luxe-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 64, 64, 0.4);
+  background: rgba(255, 64, 64, 0.1);
+}
+
+.luxe-live-card {
+  border-color: rgba(255, 64, 64, 0.35) !important;
+}
+
+/* ---- Prediction modal steppers ---- */
+.luxe-stepper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  width: 40px;
+  font-size: 1.5rem;
+  line-height: 1;
   color: var(--foreground);
-  caret-color: var(--pitch);
-  color-scheme: dark;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
-.chat-input::placeholder {
-  color: rgba(240, 244, 248, 0.45);
+.luxe-stepper-btn:hover {
+  border-color: var(--gold-glow);
+  color: var(--text-gold);
+  transform: translateY(-1px);
 }
 
-.chat-input:focus {
-  border-color: var(--pitch);
-  outline: none;
-  box-shadow: 0 0 0 1px rgba(0, 200, 83, 0.35);
-}
-
-.chat-input:-webkit-autofill,
-.chat-input:-webkit-autofill:hover,
-.chat-input:-webkit-autofill:focus {
-  -webkit-text-fill-color: var(--foreground) !important;
-  box-shadow: 0 0 0 1000px var(--press-card) inset !important;
-  caret-color: var(--pitch);
-}
-
-@keyframes confetti-float {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-    opacity: 0.6;
-  }
-  50% {
-    transform: translateY(-6px) rotate(3deg);
-    opacity: 1;
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-luxe-sheen,
+  .luxe-live-dot {
+    animation: none !important;
   }
 }

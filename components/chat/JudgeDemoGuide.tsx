@@ -65,7 +65,7 @@ function GuideDemoChips({
           type="button"
           disabled={disabled}
           onClick={() => onPick(p.text)}
-          className="rounded-full border border-gold/25 bg-press/80 px-2.5 py-1 text-[10px] text-foreground/75 transition hover:border-gold/50 hover:bg-gold/10 hover:text-gold disabled:cursor-not-allowed disabled:opacity-40"
+          className="btn-walrus-primary px-2.5 py-1 text-[10px] disabled:opacity-40"
         >
           {p.label}
         </button>
@@ -89,14 +89,10 @@ function JudgeDemoGuideContent({
 
   return (
     <>
-      <div className="mb-3 border-b border-gold/25 pb-3">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gold/80">
-          Walrus Sessions 4
-        </p>
-        <h2 className="font-display text-base font-bold tracking-wide text-gold">
-          Judge demo guide
-        </h2>
-        <p className="mt-1 text-[11px] leading-relaxed text-foreground/55">
+      <div className="mb-3 border-b border-border-subtle pb-3">
+        <p className="walrus-label">Walrus Sessions 4</p>
+        <h2 className="walrus-heading mt-1 text-base">Judge demo guide</h2>
+        <p className="walrus-caption mt-2">
           ~60s walkthrough — memory visible in chat, ledger, and on-chain.
         </p>
       </div>
@@ -105,15 +101,15 @@ function JudgeDemoGuideContent({
         {STEPS.map((step) => (
           <li
             key={step.n}
-            className="rounded-lg border border-gold/20 bg-background/30 px-2.5 py-2"
+            className="walrus-card px-3 py-2"
           >
             <div className="mb-1 flex items-center gap-2">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold/20 text-[10px] font-bold text-gold">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border-subtle text-[10px] font-medium text-brand-light">
                 {step.n}
               </span>
-              <span className="text-xs font-semibold text-gold">{step.title}</span>
+              <span className="text-xs font-medium text-foreground">{step.title}</span>
             </div>
-            <p className="text-[11px] leading-relaxed text-foreground/65">
+            <p className="walrus-caption">
               {step.body}
               {"action" in step && step.action === "settings" && (
                 <>
@@ -121,7 +117,7 @@ function JudgeDemoGuideContent({
                   <button
                     type="button"
                     onClick={onOpenSettings}
-                    className="font-semibold text-pitch underline hover:text-gold"
+                    className="text-brand-light underline hover:text-accent"
                   >
                     Open Settings
                   </button>
@@ -137,7 +133,7 @@ function JudgeDemoGuideContent({
         ))}
       </ol>
 
-      <div className="mt-3 space-y-2 border-t border-gold/25 pt-3 text-[10px] text-foreground/45">
+      <div className="mt-3 space-y-2 border-t border-border-subtle pt-3 walrus-caption">
         <p>
           <span className="font-semibold text-foreground/60">Look for:</span>{" "}
           toxicity meter · ledger updates after each Send · roast callbacks from
@@ -146,7 +142,7 @@ function JudgeDemoGuideContent({
         <p>
           MemWal:{" "}
           {memWalLive ? (
-            <span className="text-pitch">🟢 mainnet</span>
+            <span className="text-accent">live</span>
           ) : (
             <span>⚪ offline demo</span>
           )}
@@ -157,7 +153,7 @@ function JudgeDemoGuideContent({
                 href={memWalExplorerUrl(accountId)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gold/90 underline hover:text-gold"
+                className="text-brand-light underline hover:text-accent"
               >
                 Explorer
               </a>
@@ -181,7 +177,7 @@ export function JudgeDemoGuide({
   demoDisabled?: boolean;
 }) {
   return (
-    <aside className="festive-card flex max-h-[calc(100vh-8rem)] flex-col rounded-xl border-2 border-gold/50 bg-gold/[0.06] p-4 shadow-[0_0_24px_rgba(245,200,66,0.08)]">
+    <aside className="walrus-card flex max-h-[calc(100vh-8rem)] flex-col p-4">
       <JudgeDemoGuideContent
         memWalLive={memWalLive}
         onOpenSettings={onOpenSettings}
@@ -204,8 +200,8 @@ export function JudgeDemoGuideMobile({
   demoDisabled?: boolean;
 }) {
   return (
-    <details className="festive-card rounded-xl border-2 border-gold/40 bg-gold/[0.06] p-3 lg:hidden">
-      <summary className="cursor-pointer text-xs font-bold text-gold">
+    <details className="walrus-card p-3 lg:hidden">
+      <summary className="walrus-caption cursor-pointer font-medium text-foreground">
         Judge demo guide (tap to expand)
       </summary>
       <div className="mt-3 max-h-64 overflow-y-auto">

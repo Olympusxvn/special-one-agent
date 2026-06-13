@@ -110,8 +110,8 @@ export async function POST(req: Request) {
     const [baseProfile, recalledMemories] = await Promise.all([
       loadFanProfileFast(walletAddress, 500),
       recallMemories(walletAddress, lastUserText, {
-        limit: 2,
-        timeoutMs: 800,
+        limit: 5,
+        timeoutMs: 5_000,
         useCache: true,
       }),
     ]);

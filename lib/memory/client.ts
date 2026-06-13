@@ -1,9 +1,12 @@
 import { MemWal } from "@mysten-incubation/memwal";
 
+import { AGENT_MEMORY_PREFIX } from "./constants";
+
 const clients = new Map<string, MemWal>();
 
+/** Per-wallet namespace: mr-toxic-special-one-{address} */
 export function namespaceForWallet(walletAddress: string): string {
-  return `special-one-${walletAddress.toLowerCase()}`;
+  return `${AGENT_MEMORY_PREFIX}-${walletAddress.toLowerCase()}`;
 }
 
 function delegateKey(): string | null {
@@ -30,7 +33,7 @@ export function isMemWalLive(): boolean {
   return Boolean(delegateKey() && accountId());
 }
 
-/** Per-wallet MemWal client — namespace bound at create (reference: daily-walrus package). */
+/** Per-wallet MemWal client — namespace bound at create + passed per call. */
 export function getClientForWallet(walletAddress: string): MemWal | null {
   if (!isMemWalLive()) return null;
 
@@ -50,17 +53,5 @@ export function getClientForWallet(walletAddress: string): MemWal | null {
 
 /** @deprecated Use getClientForWallet(wallet) */
 export function getMemWalClient(): MemWal | null {
-  if (!isMemWalLive()) return null;
-  const fallbackNs = "special-one-default";
-  let client = clients.get(fallbackNs);
-  if (!client) {
-    client = MemWal.create({
-      key: delegateKey()!,
-      accountId: accountId()!,
-      serverUrl: relayerUrl(),
-      namespace: fallbackNs,
-    });
-    clients.set(fallbackNs, client);
-  }
-  return client;
+  return getClientForWallet("default");
 }

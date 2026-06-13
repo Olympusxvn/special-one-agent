@@ -1,18 +1,17 @@
 import { NextResponse } from "next/server";
 
-import {
-  getFootballDataSource,
-  getWorldCupFixtures,
-} from "@/lib/football/provider";
+import { getWorldCupData } from "@/lib/api/worldcup";
+
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const fixtures = await getWorldCupFixtures();
-  const source = getFootballDataSource();
-
+  const { matches, groups, source, updatedAt, groupsProjected } =
+    await getWorldCupData();
   return NextResponse.json({
-    fixtures,
+    matches,
+    groups,
     source,
-    leagueId: source === "api-football" ? 1 : undefined,
-    season: source === "api-football" ? 2026 : undefined,
+    updatedAt,
+    groupsProjected,
   });
 }

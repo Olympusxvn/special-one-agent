@@ -84,7 +84,7 @@ export function LlmSettingsModal({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-midnight/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
         aria-label="Close settings"
         onClick={onClose}
       />
@@ -93,45 +93,40 @@ export function LlmSettingsModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="llm-settings-title"
-        className="relative z-10 w-full max-w-md rounded-2xl border border-gold/25 bg-press-card p-6 shadow-2xl"
+        className="walrus-card relative z-10 w-full max-w-md p-6 shadow-elevated"
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs uppercase tracking-[0.2em] text-pitch/80">
-              Settings
-            </p>
-            <h2
-              id="llm-settings-title"
-              className="font-display text-2xl tracking-wide text-gold"
-            >
+            <p className="walrus-label">Settings</p>
+            <h2 id="llm-settings-title" className="walrus-heading mt-1 text-2xl">
               LLM Connection
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border border-press-border px-2.5 py-1 text-sm text-foreground/70 hover:border-gold/40 hover:text-foreground"
+            className="btn-walrus-primary px-2.5 py-1 text-sm"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
 
-        <p className="mb-4 text-sm text-foreground/70">
+        <p className="walrus-caption mb-4 text-foreground/70">
           Paste an API key for the provider you want. After saving, the model
           dropdown switches to match (e.g. Gemini key → Gemini model). Keys stay
           in this browser tab only.
         </p>
 
         {activeTab === "google" && (
-          <ol className="mb-4 list-decimal space-y-1 pl-4 text-xs text-foreground/60">
+          <ol className="mb-4 list-decimal space-y-1 pl-4 text-caption text-foreground/60">
             <li>
               Open{" "}
               <a
                 href="https://aistudio.google.com/apikey"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gold underline"
+                className="text-brand-light underline hover:text-accent"
               >
                 Google AI Studio
               </a>{" "}
@@ -153,10 +148,10 @@ export function LlmSettingsModal({
               key={p.id}
               type="button"
               onClick={() => setActiveTab(p.id)}
-              className={`flex-1 rounded-lg px-2 py-2 text-xs font-semibold transition ${
+              className={`flex-1 rounded-pill px-2 py-2 text-caption font-medium transition ${
                 activeTab === p.id
-                  ? "bg-gold/20 text-gold ring-1 ring-gold/40"
-                  : "bg-press text-foreground/60 hover:text-foreground"
+                  ? "border border-brand bg-brand/10 text-brand-light"
+                  : "border border-transparent text-foreground/60 hover:text-foreground"
               }`}
             >
               {p.name}
@@ -165,12 +160,12 @@ export function LlmSettingsModal({
           ))}
         </div>
 
-        <div className="mb-3 flex flex-wrap gap-3 text-xs">
+        <div className="mb-3 flex flex-wrap gap-3 text-caption">
           <a
             href={provider.loginUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-pitch underline hover:text-gold"
+            className="text-brand-light underline hover:text-accent"
           >
             Log in to {provider.name} →
           </a>
@@ -178,13 +173,13 @@ export function LlmSettingsModal({
             href={provider.keyUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gold underline hover:text-gold-bright"
+            className="text-brand-light underline hover:text-accent"
           >
             Get API key →
           </a>
         </div>
 
-        <p className="mb-2 text-xs text-foreground/50">{provider.keyHint}</p>
+        <p className="mb-2 text-caption text-foreground/50">{provider.keyHint}</p>
 
         <input
           type="password"
@@ -194,7 +189,7 @@ export function LlmSettingsModal({
           }
           placeholder={provider.placeholder}
           autoComplete="off"
-          className="chat-input mb-3 w-full rounded-xl px-4 py-3 text-sm"
+          className="walrus-input mb-3 w-full px-4 py-3 text-sm"
         />
 
         <div className="flex gap-2">
@@ -202,7 +197,7 @@ export function LlmSettingsModal({
             type="button"
             onClick={handleSave}
             disabled={!draft.trim()}
-            className="btn-festive flex-1 rounded-xl px-4 py-2.5 text-sm font-bold disabled:opacity-50"
+            className="btn-walrus-accent flex-1 px-4 py-2.5 text-sm disabled:opacity-50"
           >
             Save key
           </button>
@@ -210,7 +205,7 @@ export function LlmSettingsModal({
             <button
               type="button"
               onClick={handleDisconnect}
-              className="rounded-xl border border-press-border px-4 py-2.5 text-sm text-foreground/70 hover:border-roast/50 hover:text-roast"
+              className="btn-walrus-primary px-4 py-2.5 text-sm hover:text-roast"
             >
               Disconnect
             </button>
@@ -218,19 +213,19 @@ export function LlmSettingsModal({
         </div>
 
         {storedKey && (
-          <p className="mt-3 text-xs text-pitch">
+          <p className="mt-3 text-caption text-accent">
             {provider.name} key saved ({maskApiKey(storedKey)})
           </p>
         )}
 
-        <p className="mt-4 rounded-lg border border-press-border/60 bg-press/50 px-3 py-2 text-xs text-foreground/60">
+        <p className="walrus-card mt-4 px-3 py-2 text-caption text-foreground/60">
           {statusLabel}
         </p>
 
         <button
           type="button"
           onClick={onClose}
-          className="btn-outline-festive mt-4 w-full rounded-xl py-2.5 text-sm font-semibold text-gold"
+          className="btn-walrus-primary mt-4 w-full py-2.5 text-sm"
         >
           Done
         </button>

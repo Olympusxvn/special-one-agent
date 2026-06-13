@@ -72,16 +72,12 @@ export function NewsFeed({
   }, []);
 
   return (
-    <section className={`festive-card w-full max-w-xl rounded-xl p-4 shadow-glow ${className}`}>
+    <section className={`walrus-card w-full max-w-xl p-4 ${className}`}>
       <header className="mb-3 flex items-start gap-3">
         <WorldCupLogo size="sm" className="mt-0.5 shrink-0 opacity-90" />
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-pitch/70">
-            Wire Service
-          </p>
-          <h2 className="font-display text-lg tracking-wide text-gold">
-            {title}
-          </h2>
+          <p className="walrus-label">Wire Service</p>
+          <h2 className="walrus-heading mt-1 text-lg">{title}</h2>
         </div>
       </header>
 
@@ -90,12 +86,12 @@ export function NewsFeed({
           {Array.from({ length: 3 }).map((_, i) => (
             <li
               key={i}
-              className="h-10 animate-pulse rounded-lg bg-pitch/10"
+              className="h-10 animate-pulse rounded-lg bg-foreground/5"
             />
           ))}
         </ul>
       ) : error && items.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-gold/25 bg-gold/5 px-3 py-5 text-center text-sm text-foreground/50">
+        <p className="walrus-card border-dashed px-3 py-5 text-center walrus-caption">
           {error}
         </p>
       ) : (
@@ -106,12 +102,12 @@ export function NewsFeed({
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group block rounded-lg border border-transparent px-2 py-2 transition hover:border-pitch/30 hover:bg-pitch/5"
+                className="group block rounded-lg border border-transparent px-2 py-2 transition hover:border-border-subtle hover:bg-foreground/5"
               >
-                <p className="text-sm leading-snug text-foreground/90 group-hover:text-gold">
+                <p className="text-caption leading-snug text-foreground/90 group-hover:text-brand-light">
                   {item.title}
                 </p>
-                <p className="mt-1 text-xs text-foreground/40">
+                <p className="mt-1 text-caption text-foreground/40">
                   {item.sourceName}
                   {formatDate(item.publishedAt)
                     ? ` · ${formatDate(item.publishedAt)}`

@@ -50,6 +50,8 @@ console.log("✓ MEMWAL_PRIVATE_KEY set (delegate)");
 console.log(`✓ MEMWAL_ACCOUNT_ID: ${accountId}`);
 console.log(`✓ MEMWAL_SERVER_URL: ${serverUrl}`);
 console.log(`\nExplorer: https://suiscan.xyz/mainnet/object/${accountId}`);
-console.log("\nUsers: connect Sui wallet in app only — namespace special-one-{address}\n");
+console.log(
+  "\nUsers: connect Sui wallet in app only — namespace mr-toxic-special-one-{address}\n",
+);
 
 process.exit(0);

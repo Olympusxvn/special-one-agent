@@ -4,23 +4,27 @@ import {
   getPredictionOutcome,
   type PredictionOutcome,
 } from "@/lib/memory/prediction-outcome";
+import { AGENT_MEMORY_PREFIX } from "@/lib/memory/constants";
 import type { FanMemory, Prediction } from "@/lib/memory/types";
+import { TeamFlag } from "@/components/world-cup/TeamFlag";
+
+import { RoastLevelBar } from "./RoastLevelBar";
 
 const OUTCOME_STYLES: Record<
   PredictionOutcome,
   { label: string; className: string }
 > = {
   pending: {
-    label: "PENDING",
-    className: "border-pitch/30 bg-pitch/10 text-pitch",
+    label: "Pending",
+    className: "text-accent border-accent/30 bg-accent/5",
   },
   correct: {
-    label: "CORRECT",
-    className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+    label: "Correct",
+    className: "text-brand-light border-brand/30 bg-brand/5",
   },
   wrong: {
-    label: "WRONG",
-    className: "border-roast/40 bg-roast/10 text-roast",
+    label: "Wrong",
+    className: "text-muted border-border bg-surface",
   },
 };
 
@@ -35,37 +39,32 @@ function formatWhen(iso: string): string {
   }
 }
 
-function PredictionRow({ p, index }: { p: Prediction; index: number }) {
+function PredictionRow({ p }: { p: Prediction }) {
   const outcome = getPredictionOutcome(p);
   const style = OUTCOME_STYLES[outcome];
 
   return (
-    <li
-      key={`${p.match}-${p.createdAt}-${index}`}
-      className="rounded-lg border border-gold/10 bg-background/40 px-2.5 py-2 text-xs"
-    >
-      <div className="mb-1 flex items-start justify-between gap-2">
-        <span className="font-medium leading-snug text-gold">{p.match}</span>
+    <li className="walrus-card px-3 py-3 text-caption">
+      <div className="mb-2 flex items-start justify-between gap-2">
+        <span className="font-medium text-foreground">{p.match}</span>
         <span
-          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold tracking-wide ${style.className}`}
+          className={`shrink-0 rounded-sm border px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${style.className}`}
         >
           {style.label}
         </span>
       </div>
-      <p className="text-foreground/80">
-        <span className="text-foreground/50">You said: </span>
+      <p className="text-foreground/90">
+        <span className="text-muted">You said: </span>
         {p.prediction}
       </p>
       {p.result !== null && (
-        <p className="mt-0.5 text-foreground/70">
-          <span className="text-foreground/50">Actual: </span>
+        <p className="mt-1 text-foreground/80">
+          <span className="text-muted">Actual: </span>
           {p.result}
         </p>
       )}
       {p.createdAt && (
-        <p className="mt-1 text-[10px] text-foreground/40">
-          Saved {formatWhen(p.createdAt)} · Walrus
-        </p>
+        <p className="mt-2 walrus-label">Walrus · {formatWhen(p.createdAt)}</p>
       )}
     </li>
   );
@@ -87,17 +86,25 @@ function teamFromMemories(memories: string[]): string | null {
 export function PredictionCard({
   profile,
   walrusMemories = [],
+  recallStatus,
   profileLoading,
   memWalLive,
   walletAddress,
+  toxicityLevel = 1,
   onSync,
   syncing,
 }: {
   profile: FanMemory | null;
   walrusMemories?: string[];
+  recallStatus?: {
+    ok: boolean;
+    error: string | null;
+    hitCount: number;
+  } | null;
   profileLoading?: boolean;
   memWalLive?: boolean;
   walletAddress?: string;
+  toxicityLevel?: number;
   onSync: () => void;
   syncing: boolean;
 }) {
@@ -111,127 +118,134 @@ export function PredictionCard({
     .slice(0, 8);
 
   const namespace = walletAddress
-    ? `special-one-${walletAddress.toLowerCase().slice(0, 10)}…`
+    ? `${AGENT_MEMORY_PREFIX}-${walletAddress.toLowerCase().slice(0, 10)}…`
     : null;
 
   return (
-    <aside className="festive-card flex max-h-[calc(100vh-8rem)] flex-col rounded-xl p-4">
-      <div className="mb-2 flex items-center gap-2">
-        <span className="text-lg">📋</span>
-        <h3 className="text-sm font-bold uppercase tracking-wider text-gold">
-          Walrus Memory Ledger
-        </h3>
+    <aside className="flex max-h-[calc(100vh-8rem)] flex-col gap-4">
+      <div className="walrus-card p-4">
+        <p className="walrus-label mb-1">Walrus memory</p>
+        <h3 className="walrus-heading text-base font-medium">Ledger</h3>
+        <p className="walrus-caption mt-2">
+          Per-wallet recall from MemWal — updates after each turn.
+        </p>
       </div>
 
-      <p className="mb-3 text-[10px] leading-relaxed text-foreground/45">
-        Prediction history loaded from MemWal per wallet — updates after each
-        chat turn and on refresh.
-      </p>
+      <RoastLevelBar level={toxicityLevel} />
 
       {profileLoading && !teamLabel && pending.length === 0 && (
-        <p className="mb-3 animate-pulse text-xs text-foreground/50">
-          Saving to Walrus Memory…
-        </p>
+        <p className="walrus-caption animate-pulse px-1">Saving to Walrus…</p>
       )}
 
       {teamLabel ? (
-        <div className="mb-3 rounded-lg border border-gold/15 bg-gold/5 px-2.5 py-2 text-xs">
-          <p className="text-foreground/70">
-            Team:{" "}
-            <span className="font-semibold text-pitch">{teamLabel}</span>
-          </p>
-          {profile && profile.flip_flop_count > 0 && (
-            <p className="mt-0.5 text-roast">
-              {profile.flip_flop_count} bandwagon flip-flop
-              {profile.flip_flop_count > 1 ? "s" : ""} 🤡
+        <div className="walrus-card flex items-center gap-4 p-4">
+          <TeamFlag team={teamLabel} size="lg" />
+          <div className="min-w-0 flex-1">
+            <p className="walrus-label">Your team</p>
+            <p className="truncate text-base font-medium text-foreground">
+              {teamLabel}
             </p>
-          )}
-          {profile && (
-            <p className="mt-0.5 text-foreground/50">
-              Confidence: {profile.confidence_level}
-            </p>
-          )}
+            {profile && profile.flip_flop_count > 0 && (
+              <p className="walrus-caption mt-1 text-brand-light">
+                {profile.flip_flop_count} flip-flop
+                {profile.flip_flop_count > 1 ? "s" : ""}
+              </p>
+            )}
+          </div>
         </div>
       ) : (
         !profileLoading && (
-          <p className="mb-3 text-xs text-foreground/50">
-            No team yet — tell the Special One who you support.
+          <p className="walrus-caption border border-dashed border-border-subtle p-4 text-center">
+            Tell Mourinho who you support.
           </p>
         )
       )}
 
-      {walrusMemories.length > 0 && (
-        <section className="mb-3">
-          <h4 className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-foreground/45">
-            Walrus recall
-          </h4>
-          <ul className="max-h-28 space-y-1 overflow-y-auto">
+      <section className="walrus-card p-4">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <h4 className="walrus-label">Recall</h4>
+          {recallStatus && memWalLive && (
+            <span
+              className={`walrus-badge text-[10px] ${
+                recallStatus.ok ? "walrus-badge-live" : ""
+              }`}
+            >
+              {recallStatus.ok
+                ? `${recallStatus.hitCount} hit${recallStatus.hitCount === 1 ? "" : "s"}`
+                : "empty"}
+            </span>
+          )}
+        </div>
+        {walrusMemories.length > 0 ? (
+          <ul className="max-h-32 space-y-2 overflow-y-auto">
             {walrusMemories.slice(0, 5).map((memory, index) => (
               <li
                 key={`${index}-${memory.slice(0, 24)}`}
-                className="rounded border border-gold/10 bg-background/30 px-2 py-1 text-[10px] leading-snug text-foreground/65"
+                className="border-l-2 border-brand/30 py-1 pl-3 text-caption leading-snug text-foreground/80"
               >
                 {memory}
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        ) : (
+          !profileLoading &&
+          memWalLive && (
+            <p className="walrus-caption">
+              {recallStatus?.error ?? "No memories yet — chat once, then refresh."}
+            </p>
+          )
+        )}
+      </section>
 
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto">
         <section>
-          <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-foreground/45">
-            Open predictions
-          </h4>
+          <h4 className="walrus-label mb-3 px-1">Open predictions</h4>
           {pending.length === 0 ? (
-            <p className="text-xs text-foreground/45">None pending.</p>
+            <p className="walrus-caption px-1">None pending.</p>
           ) : (
             <ul className="space-y-2">
               {pending.map((p, i) => (
-                <PredictionRow key={`pending-${i}`} p={p} index={i} />
+                <PredictionRow key={`pending-${i}`} p={p} />
               ))}
             </ul>
           )}
         </section>
 
         <section>
-          <h4 className="mb-2 text-[10px] font-bold uppercase tracking-widest text-foreground/45">
-            Resolved history
-          </h4>
+          <h4 className="walrus-label mb-3 px-1">History</h4>
           {resolved.length === 0 ? (
-            <p className="text-xs text-foreground/45">
-              Report a result in chat (e.g. &quot;Argentina beat Brazil 1-0&quot;)
-              or use sync below.
+            <p className="walrus-caption px-1">
+              Report results in chat to populate history.
             </p>
           ) : (
             <ul className="space-y-2">
               {resolved.map((p, i) => (
-                <PredictionRow key={`resolved-${i}`} p={p} index={i} />
+                <PredictionRow key={`resolved-${i}`} p={p} />
               ))}
             </ul>
           )}
         </section>
       </div>
 
-      <div className="mt-3 space-y-2 border-t border-gold/10 pt-3">
+      <div className="space-y-3 border-t border-border-subtle pt-4">
         {namespace && (
-          <p className="text-[10px] text-foreground/40">
-            Namespace:{" "}
-            <code className="text-foreground/55">{namespace}</code>
-            {memWalLive ? " · 🟢 mainnet" : " · ⚪ offline"}
+          <p className="walrus-caption break-all">
+            <span className="text-muted">ns </span>
+            {namespace}
+            <span className="ml-1">{memWalLive ? "· live" : "· demo"}</span>
           </p>
         )}
         <button
           type="button"
           onClick={onSync}
           disabled={syncing || profileLoading}
-          className="btn-outline-festive w-full rounded-lg px-3 py-2 text-xs font-semibold text-gold disabled:opacity-50"
+          className="btn-walrus-primary w-full disabled:opacity-50"
         >
           {syncing
-            ? "Syncing results…"
+            ? "Syncing…"
             : profileLoading
-              ? "Refreshing ledger…"
-              : "Sync pending results"}
+              ? "Refreshing…"
+              : "Sync results"}
         </button>
       </div>
     </aside>

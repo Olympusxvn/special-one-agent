@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { assertWalletAuth } from "@/lib/auth/verify-wallet";
+import { DEFAULT_RECALL_QUERY } from "@/lib/memory/constants";
 import { isMemWalLive, namespaceForWallet } from "@/lib/memory/client";
-import {
-  loadProfileFromWalrus,
-  recallForWallet,
-} from "@/lib/memory/wallet-memory";
+import { buildProfileFromRecallHits } from "@/lib/memory/profile-from-recall";
+import { recallForWalletDetailed } from "@/lib/memory/wallet-memory";
+import { emptyFanMemory } from "@/lib/memory/types";
 
 export const maxDuration = 60;
 
@@ -31,19 +31,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: auth.error }, { status: 401 });
   }
 
-  const query =
-    body.query?.trim() ||
-    "favorite team supports football world cup predictions bad takes";
+  const query = body.query?.trim() || DEFAULT_RECALL_QUERY;
 
-  const [memories, profile] = await Promise.all([
-    recallForWallet(walletAddress, query, 12),
-    loadProfileFromWalrus(walletAddress),
-  ]);
+  // Single optimized recall — profile derived from same hits (avoids double relayer load).
+  const recallOutcome = await recallForWalletDetailed(walletAddress, query, 12);
+
+  const profile =
+    recallOutcome.memories.length > 0
+      ? buildProfileFromRecallHits(
+          recallOutcome.memories.map((text) => ({ text })),
+        )
+      : emptyFanMemory();
 
   return NextResponse.json({
-    memories,
+    memories: recallOutcome.memories,
     profile,
     memoryEnabled: isMemWalLive(),
     namespace: namespaceForWallet(walletAddress),
+    recallOk: recallOutcome.ok,
+    recallError: recallOutcome.error ?? null,
+    hitCount: recallOutcome.hitCount,
+    fromCache: recallOutcome.fromCache ?? false,
+    rateLimited: recallOutcome.rateLimited ?? false,
   });
 }

@@ -1,4 +1,6 @@
 import { unstable_cache } from "next/cache";
+
+export const dynamic = "force-dynamic";
 import { NextResponse } from "next/server";
 
 import { fetchFootballNews, type NewsItem } from "@/lib/football/news";

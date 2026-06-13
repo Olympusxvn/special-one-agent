@@ -4,7 +4,7 @@ import type { ConfidenceLevel, FanMemory, Prediction } from "./types";
 import { emptyFanMemory } from "./types";
 import {
   loadProfileFromWalrus,
-  recallForWallet,
+  recallWithOptimization,
   rememberAndWaitForWallet,
   rememberForWallet,
 } from "./wallet-memory";
@@ -245,8 +245,8 @@ export async function recallMemories(
   options: RecallMemoriesOptions = {},
 ): Promise<string[]> {
   const limit = options.limit ?? 5;
-  const timeoutMs = options.timeoutMs ?? 1200;
-  const useCache = options.useCache ?? false;
+  const timeoutMs = options.timeoutMs ?? 5_000;
+  const useCache = options.useCache ?? true;
   const normalizedQuery = normalizeRecallQuery(query);
 
   if (useCache) {
@@ -257,20 +257,44 @@ export async function recallMemories(
   }
 
   try {
-    const result = await Promise.race([
-      recallForWallet(walletAddress, normalizedQuery, limit + 3),
-      new Promise<string[]>((resolve) =>
-        setTimeout(() => resolve([]), timeoutMs),
+    const outcome = await Promise.race([
+      recallWithOptimization(walletAddress, normalizedQuery, {
+        limit: limit + 2,
+        useCache: true,
+        maxFallbackQueries: 1,
+      }),
+      new Promise<Awaited<ReturnType<typeof recallWithOptimization>>>(
+        (resolve) =>
+          setTimeout(
+            () =>
+              resolve({
+                memories: [],
+                ok: false,
+                namespace: "",
+                hitCount: 0,
+              }),
+            timeoutMs,
+          ),
       ),
     ]);
-    const memories = trimRecallLines(result, limit);
 
-    if (useCache) {
+    const memories = trimRecallLines(outcome.memories, limit);
+
+    if (useCache && memories.length > 0) {
       recallCache.set(walletAddress, { query: normalizedQuery, memories });
     }
 
+    if (memories.length > 0) {
+      console.log(
+        `[Walrus recall/chat] ${memories.length} memories for ${walletAddress.slice(0, 10)}…${outcome.fromCache ? " (cache)" : ""}`,
+      );
+    } else if (outcome.rateLimited) {
+      console.warn("[Walrus recall/chat] rate limited, no cache available");
+    }
+
     return memories;
-  } catch {
+  } catch (err) {
+    console.error("[Walrus recall/chat] failed:", err);
     return [];
   }
 }

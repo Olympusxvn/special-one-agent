@@ -1,9 +1,10 @@
 import type { LlmProvider } from "@/lib/ai/models";
 import type { ServerLlmCapabilities } from "@/lib/ai/server-llm";
 
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { WalletButton } from "@/components/wallet/WalletButton";
-import { WorldCupLogo } from "@/components/world-cup/WorldCupLogo";
-import { WorldCupStripe } from "@/components/world-cup/WorldCupStripe";
+import { MourinhoAvatar } from "./MourinhoAvatar";
+
 import { MemWalStatus } from "./MemWalStatus";
 import { ModelSelector } from "./ModelSelector";
 import { ToxicityMeter } from "./ToxicityMeter";
@@ -34,49 +35,43 @@ export function PressRoomHeader({
     hasUserOpenRouter;
 
   return (
-    <>
-      <div className="pitch-accent-bar" />
-      <WorldCupStripe />
-      <header className="relative z-30 stadium-header px-4 py-3 backdrop-blur-md">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="logo-badge hidden shrink-0 sm:block">
-              <WorldCupLogo size="sm" />
-            </div>
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-pitch/80">
-                Walrus Sessions 4 · World Cup 2026
-              </p>
-              <h1 className="font-display text-xl tracking-wide sm:text-2xl">
-                <span className="gradient-text-gold">MR. TOXIC SPECIAL ONE</span>
-              </h1>
-              <MemWalStatus live={memWalLive} />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <ToxicityMeter level={toxicityLevel} />
-            <button
-              type="button"
-              onClick={onOpenSettings}
-              className="shrink-0 rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground transition hover:border-gold/50"
-              aria-label="Open LLM settings"
-            >
-              ⚙️ Settings
-              {!llmReady ? (
-                <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-roast" />
-              ) : null}
-            </button>
-            <ModelSelector
-              value={modelId}
-              onChange={onModelChange}
-              connectedProviders={connectedProviders}
-              serverLlm={serverLlm}
-              hasUserOpenRouter={hasUserOpenRouter}
-            />
-            <WalletButton />
+    <header className="walrus-nav relative z-30 px-4 py-5 sm:px-6">
+      <div className="mx-auto flex max-w-walrus flex-wrap items-center justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-4">
+          <MourinhoAvatar size={44} />
+          <div className="min-w-0">
+            <p className="walrus-label mb-1">Walrus Memory · World Cup 2026</p>
+            <h1 className="walrus-heading truncate text-lg font-medium sm:text-xl">
+              Mr. Toxic Special One
+            </h1>
+            <MemWalStatus live={memWalLive} />
           </div>
         </div>
-      </header>
-    </>
+
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          <ToxicityMeter level={toxicityLevel} />
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="btn-walrus-primary px-3 py-2 text-caption"
+            aria-label="Open LLM settings"
+          >
+            Settings
+            {!llmReady ? (
+              <span className="ml-1 inline-block h-1.5 w-1.5 rounded-full bg-brand" />
+            ) : null}
+          </button>
+          <ModelSelector
+            value={modelId}
+            onChange={onModelChange}
+            connectedProviders={connectedProviders}
+            serverLlm={serverLlm}
+            hasUserOpenRouter={hasUserOpenRouter}
+          />
+          <ThemeToggle />
+          <WalletButton />
+        </div>
+      </div>
+    </header>
   );
 }

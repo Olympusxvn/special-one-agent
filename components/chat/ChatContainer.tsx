@@ -1,11 +1,18 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useCurrentAccount, useSignPersonalMessage } from "@mysten/dapp-kit";
+import {
+  ConnectButton,
+  useCurrentAccount,
+  useSignPersonalMessage,
+} from "@mysten/dapp-kit";
 import { DefaultChatTransport } from "ai";
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { WorldCupWatermark } from "@/components/world-cup/WorldCupWatermark";
+import { LuxuryNav } from "@/components/luxury/LuxuryNav";
+import { StadiumBackground } from "@/components/world-cup/StadiumBackground";
+import { TeamFlag } from "@/components/world-cup/TeamFlag";
 import {
   getModelById,
   LLM_PROVIDERS,
@@ -35,6 +42,7 @@ import {
   setStoredWalletAuth,
 } from "@/lib/storage/wallet-auth";
 
+import { MourinhoAvatar } from "./MourinhoAvatar";
 import { DemoPromptChips } from "./DemoPromptChips";
 import { JudgeDemoGuide, JudgeDemoGuideMobile } from "./JudgeDemoGuide";
 import { LlmSettingsModal } from "./LlmSettingsModal";
@@ -73,6 +81,13 @@ export function ChatContainer({
   });
   const [profile, setProfile] = useState<FanMemory | null>(null);
   const [walrusMemories, setWalrusMemories] = useState<string[]>([]);
+  const [recallStatus, setRecallStatus] = useState<{
+    ok: boolean;
+    error: string | null;
+    hitCount: number;
+  } | null>(null);
+  const [walrusToast, setWalrusToast] = useState<string | null>(null);
+  const walrusToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [committing, setCommitting] = useState(false);
   const [syncing, setSyncing] = useState(false);
@@ -89,6 +104,40 @@ export function ChatContainer({
   useEffect(() => {
     modelIdRef.current = modelId;
   }, [modelId]);
+
+  const showWalrusBusyToast = useCallback(() => {
+    setWalrusToast("Walrus is a bit busy, using cached memories…");
+    if (walrusToastTimer.current) clearTimeout(walrusToastTimer.current);
+    walrusToastTimer.current = setTimeout(() => setWalrusToast(null), 4_500);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (walrusToastTimer.current) clearTimeout(walrusToastTimer.current);
+    };
+  }, []);
+
+  const applyRecallMeta = useCallback(
+    (data: {
+      recallOk?: boolean;
+      recallError?: string | null;
+      hitCount?: number;
+      memories?: string[];
+      fromCache?: boolean;
+      rateLimited?: boolean;
+    }) => {
+      const hits = data.memories ?? [];
+      setRecallStatus({
+        ok: data.recallOk ?? hits.length > 0,
+        error: data.recallError ?? null,
+        hitCount: data.hitCount ?? hits.length,
+      });
+      if (data.rateLimited) {
+        showWalrusBusyToast();
+      }
+    },
+    [showWalrusBusyToast],
+  );
 
   const handleProvidersChange = useCallback(
     (providers: LlmProvider[]) => {
@@ -196,8 +245,14 @@ export function ChatContainer({
         const notebook = (await notebookRes.json()) as {
           memories: string[];
           profile: FanMemory;
+          recallOk?: boolean;
+          recallError?: string | null;
+          hitCount?: number;
+          fromCache?: boolean;
+          rateLimited?: boolean;
         };
         setWalrusMemories(notebook.memories ?? []);
+        applyRecallMeta(notebook);
         merged = mergeFanProfiles(merged, notebook.profile);
       }
 
@@ -211,7 +266,7 @@ export function ChatContainer({
     } finally {
       setProfileLoading(false);
     }
-  }, [account?.address]);
+  }, [account?.address, applyRecallMeta]);
 
   const commitToWalrus = useCallback(
     async (message: string) => {
@@ -235,8 +290,14 @@ export function ChatContainer({
           const data = (await res.json()) as {
             profile: FanMemory;
             memories: string[];
+            recallOk?: boolean;
+            recallError?: string | null;
+            hitCount?: number;
+            fromCache?: boolean;
+            rateLimited?: boolean;
           };
           setWalrusMemories(data.memories ?? []);
+          applyRecallMeta(data);
           const local =
             loadCachedFanProfile(account.address) ?? emptyFanMemory();
           const merged = mergeFanProfiles(local, data.profile);
@@ -247,7 +308,7 @@ export function ChatContainer({
         setCommitting(false);
       }
     },
-    [account?.address],
+    [account?.address, applyRecallMeta],
   );
 
   const verifyWallet = useCallback(async () => {
@@ -385,28 +446,82 @@ export function ChatContainer({
     setInput("");
   };
 
+  const favoriteTeam =
+    profile?.favorite_team ||
+    walrusMemories
+      .map((m) => m.match(/(?:Favorite team:|supports)\s*([A-Za-z][A-Za-z\s'-]+)/i)?.[1])
+      .find(Boolean) ||
+    null;
+
   if (!account) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-8 text-center">
-        <div className="pitch-accent-bar fixed inset-x-0 top-0" />
-        <div className="relative">
-          <div className="absolute -inset-6 rounded-full bg-gold/10 blur-2xl" />
-          <span className="relative text-5xl">🔐</span>
-        </div>
-        <h2 className="font-display text-3xl tracking-wide">
-          <span className="gradient-text-gold">Connect Your Wallet</span>
-        </h2>
-        <p className="max-w-md text-sm text-foreground/70">
-          The Special One only roasts verified fans. Connect your Sui wallet to
-          unlock Walrus Memory and enter the press room.
-        </p>
+      <div className="relative flex min-h-screen flex-col overflow-hidden">
+        <StadiumBackground />
+        <LuxuryNav active="/chat" />
+
+        <main className="relative z-10 flex flex-1 items-center justify-center px-5 py-12 sm:px-6">
+          <div className="luxe-glass luxe-glass-strong w-full max-w-xl px-6 py-10 text-center sm:px-12 sm:py-14">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div className="absolute -inset-4 -z-10 rounded-full bg-[radial-gradient(circle,var(--gold-glow),transparent_70%)] blur-xl" />
+                <MourinhoAvatar size={84} />
+              </div>
+            </div>
+
+            <p className="luxe-eyebrow mt-6">The Press Room · Members only</p>
+
+            <h1 className="luxe-display mt-4 text-balance text-4xl sm:text-5xl">
+              Connect your <span className="luxe-gold-text">Sui wallet</span>
+            </h1>
+
+            <p className="mx-auto mt-5 max-w-md text-base leading-relaxed text-muted">
+              The Special One only roasts verified fans. Connect your wallet to
+              unlock Walrus Memory — your roasts and wrong predictions, stored
+              on-chain forever.
+            </p>
+
+            <div className="mt-7 flex flex-col items-center gap-3">
+              <div className="luxe-connect">
+                <ConnectButton connectText="Connect Sui wallet" />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                A signature request will follow to verify ownership. No gas, no
+                cost.
+              </p>
+            </div>
+
+            <div className="mx-auto mt-8 flex max-w-sm flex-wrap items-center justify-center gap-2.5">
+              <span
+                className={`luxe-chip ${memWalLive ? "luxe-chip-gold" : ""}`}
+              >
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${
+                    memWalLive ? "bg-gold" : "bg-muted"
+                  }`}
+                />
+                MemWal {memWalLive ? "live · mainnet" : "offline demo"}
+              </span>
+              <span className="luxe-chip">Sui wallet</span>
+              <span className="luxe-chip">On-chain memory</span>
+            </div>
+
+            <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+              <Link href="/schedules" className="btn-luxe-ghost">
+                Schedules
+              </Link>
+              <Link href="/media" className="btn-luxe-ghost">
+                World Cup Media
+              </Link>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-hidden">
-      <WorldCupWatermark />
+      <StadiumBackground />
       <PressRoomHeader
         toxicityLevel={toxicityLevel}
         modelId={modelId}
@@ -425,7 +540,7 @@ export function ChatContainer({
         onKeysChange={handleProvidersChange}
       />
 
-      <div className="relative mx-auto grid w-full max-w-7xl flex-1 gap-4 p-4 lg:grid-cols-[minmax(220px,260px)_1fr_minmax(260px,280px)]">
+      <div className="relative mx-auto grid w-full max-w-walrus flex-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(220px,260px)_1fr_minmax(260px,280px)]">
         <JudgeDemoGuideMobile
           memWalLive={memWalLive}
           onOpenSettings={() => setSettingsOpen(true)}
@@ -442,16 +557,29 @@ export function ChatContainer({
           />
         </div>
 
-        <div className="festive-card flex flex-col rounded-xl">
-          <div className="flex-1 space-y-4 overflow-y-auto p-4">
+        <div className="luxe-glass flex min-h-[420px] flex-col">
+          <div className="flex items-center gap-3 border-b border-[color:var(--glass-border)] px-5 py-4">
+            <div className="min-w-0 flex-1">
+              <p className="luxe-eyebrow">Press conference</p>
+              <p className="walrus-caption truncate">
+                Walrus remembers every wrong prediction
+              </p>
+            </div>
+            {favoriteTeam && (
+              <TeamFlag team={favoriteTeam} size="md" className="shrink-0" />
+            )}
+          </div>
+          <div className="flex-1 space-y-5 overflow-y-auto p-5">
             {messages.length === 0 && (
-              <div className="rounded-xl border border-dashed border-gold/30 bg-gold/5 p-6 text-center text-sm text-foreground/60">
-                <p className="mb-2 font-display text-lg tracking-wide text-gold">
-                  Welcome to the press conference, little supporter.
+              <div className="border border-dashed border-border-subtle p-8 text-center">
+                <p className="walrus-body mb-2 text-base">
+                  Welcome to the press conference.
                 </p>
-                <p>
-                  Tell me your team, make a World Cup prediction, or report a
-                  result — I remember everything. 🤡
+                <p className="walrus-quote">
+                  &quot;I am the Special One — you are especially deluded.&quot;
+                </p>
+                <p className="walrus-caption mt-4">
+                  Declare your team, predict a score, or report a result.
                 </p>
                 <DemoPromptChips
                   disabled={!canChat || isLoading}
@@ -471,71 +599,76 @@ export function ChatContainer({
                   key={m.id}
                   role={m.role === "user" ? "user" : "assistant"}
                   content={text}
+                  favoriteTeam={favoriteTeam}
+                  toxicityLevel={toxicityLevel}
                 />
               );
             })}
             {isLoading && (
-              <p className="animate-pulse text-sm text-pitch">
-                The Special One is preparing your roast… 🔥
+              <p className="walrus-caption animate-pulse">
+                The Special One is preparing your roast…
               </p>
             )}
             {error && (
-              <p className="rounded-lg border border-roast/30 bg-roast/10 px-3 py-2 text-sm text-roast">
+              <p className="walrus-card border-brand/30 px-4 py-3 text-caption text-foreground">
                 {formatChatError(error)}
               </p>
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="border-t border-gold/10 p-4">
+          <form
+            onSubmit={handleSubmit}
+            className="border-t border-border-subtle p-5"
+          >
             {!verified && (
-              <p className="mb-2 text-xs text-pitch">
+              <p className="walrus-caption mb-3">
                 {verifying ? "Signing wallet…" : "Verifying wallet signature…"}
               </p>
             )}
             {verified && !hasAnyLlmBackend && (
-              <p className="mb-2 text-xs text-gold">
+              <p className="walrus-caption mb-3">
                 Open{" "}
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(true)}
-                  className="font-semibold text-pitch underline hover:text-gold"
+                  className="text-brand-light underline hover:text-accent"
                 >
                   Settings
                 </button>{" "}
-                and paste a Gemini, ChatGPT, or Claude API key.
+                and paste an API key.
               </p>
             )}
             {verified && hasAnyLlmBackend && !canUseModel(modelId) && (
-              <p className="mb-2 text-xs text-gold">
-                Selected model needs a matching key in{" "}
+              <p className="walrus-caption mb-3">
+                Selected model needs a key in{" "}
                 <button
                   type="button"
                   onClick={() => setSettingsOpen(true)}
-                  className="font-semibold text-pitch underline hover:text-gold"
+                  className="text-brand-light underline hover:text-accent"
                 >
                   Settings
                 </button>
-                , or pick another model.
+                .
               </p>
             )}
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder={
                   canChat
-                    ? "Declare your team, predict a score, or cope…"
+                    ? "Declare your team, predict a score…"
                     : verified
                       ? "Connect an LLM in Settings…"
                       : "Waiting for wallet verification…"
                 }
                 disabled={!canChat || isLoading}
-                className="chat-input flex-1 rounded-xl px-4 py-3 text-sm disabled:opacity-50"
+                className="walrus-input flex-1 disabled:opacity-50"
               />
               <button
                 type="submit"
                 disabled={!canChat || isLoading || !input.trim()}
-                className="btn-festive rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-50"
+                className="btn-walrus-accent shrink-0 disabled:opacity-50"
               >
                 Send
               </button>
@@ -546,13 +679,25 @@ export function ChatContainer({
         <PredictionCard
           profile={profile}
           walrusMemories={walrusMemories}
+          recallStatus={recallStatus}
           profileLoading={profileLoading || committing}
           memWalLive={memWalLive}
           walletAddress={account.address}
+          toxicityLevel={toxicityLevel}
           onSync={handleSync}
           syncing={syncing}
         />
       </div>
+
+      {walrusToast && (
+        <div
+          role="status"
+          className="walrus-toast fixed bottom-6 left-1/2 z-50 max-w-sm -translate-x-1/2 px-5 py-4 text-center"
+        >
+          <p className="walrus-label mb-1">Walrus memory</p>
+          <p className="walrus-caption text-foreground">{walrusToast}</p>
+        </div>
+      )}
     </div>
   );
 }

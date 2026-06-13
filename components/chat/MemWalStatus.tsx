@@ -11,16 +11,16 @@ export function MemWalStatus({ live }: { live: boolean }) {
 
   if (live) {
     return (
-      <span className="flex flex-col gap-0.5 text-xs text-foreground/50">
-        <span>MemWal 🟢 LIVE</span>
+      <span className="mt-1 flex flex-wrap items-center gap-2">
+        <span className="walrus-badge walrus-badge-live">Memory live</span>
         {accountId && (
           <a
             href={memWalExplorerUrl(accountId)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gold/80 underline underline-offset-2 hover:text-gold"
+            className="walrus-caption text-brand-light hover:text-accent hover:underline"
           >
-            View MemWalAccount →
+            Explorer
           </a>
         )}
       </span>
@@ -28,15 +28,15 @@ export function MemWalStatus({ live }: { live: boolean }) {
   }
 
   return (
-    <span className="flex flex-col gap-0.5 text-xs text-foreground/50">
-      <span>MemWal ⚪ offline demo</span>
+    <span className="mt-1 flex flex-wrap items-center gap-2">
+      <span className="walrus-badge">Memory offline</span>
       <a
         href={MEMWAL_DASHBOARD_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-gold/80 underline underline-offset-2 hover:text-gold"
+        className="walrus-caption hover:text-accent hover:underline"
       >
-        Setup: wallet → delegate key →
+        Setup
       </a>
     </span>
   );

@@ -111,12 +111,12 @@ recalledMemories: memories.slice(0, 2).map(m => m.slice(0, 80))
 
 ## Ask for MemWal / Walrus Sessions
 
-| Ask | Context | Issue |
-|-----|---------|-------|
-| **Serverless latency guide** | Budget template: what to parallelize, what to fire-and-forget, typical relayer RTT on mainnet | — |
-| **`remember` vs `rememberAndWait` cookbook** | When writes must be awaited vs demo-safe fire-and-forget; multi-tenant delegate-key pattern | [#246](https://github.com/MystenLabs/MemWal/issues/246) |
-| **Profile upsert / key-based recall** | Structured JSON snapshots can return stale duplicates on recall | [#247](https://github.com/MystenLabs/MemWal/issues/247) |
-| **`healthCheck()` beyond env verify** | `npm run memwal:verify` only checks keys — no live relayer ping | [#248](https://github.com/MystenLabs/MemWal/issues/248) |
+| Ask | Context | Issue | Status |
+|-----|---------|-------|--------|
+| **Serverless latency guide** | Budget template: what to parallelize, what to fire-and-forget, typical relayer RTT on mainnet | [#277](https://github.com/MystenLabs/MemWal/issues/277) | **Open** |
+| **`remember` vs `rememberAndWait` cookbook** | When writes must be awaited vs demo-safe fire-and-forget; multi-tenant delegate-key pattern | [#246](https://github.com/MystenLabs/MemWal/issues/246) | **Closed** |
+| **Profile upsert / key-based recall** | Structured JSON snapshots can return stale duplicates on recall | [#247](https://github.com/MystenLabs/MemWal/issues/247) | **Closed** — upsert added |
+| **`healthCheck()` beyond env verify** | `npm run memwal:verify` only checks keys — no live relayer ping | [#248](https://github.com/MystenLabs/MemWal/issues/248) | **Closed** — SDK review |
 
 **Surprises:**
 
@@ -137,9 +137,10 @@ recalledMemories: memories.slice(0, 2).map(m => m.slice(0, 80))
 | Submission packet | [SUBMISSION.md](./SUBMISSION.md) |
 | MemWal setup | [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md) |
 | Full lessons | [CHANGELOG.md](./CHANGELOG.md) §1–11 |
+| MemWal issue #277 (serverless latency) | https://github.com/MystenLabs/MemWal/issues/277 |
 
 ---
 
 ## Tóm tắt (VI)
 
-Build roast-bot WC 2026 + MemWal per-wallet trên Vercel **hkg1**. **Timeout message 3** do `rememberAndWait`, LLM intent, sync mỗi turn, prompt dài, stream dài. Đã chuyển sang `remember()` fire-and-forget, `loadFanProfileFast` 500ms, tắt recall trên chat, roast 40 từ. **Vẫn muốn bật lại recall** — song song `Promise.all`, cap 1–2 memory × 80 ký tự, ~800ms — trade-off +0.5–1s TTFT để demo Memory Moment mạnh hơn. Cần MemWal: hướng dẫn serverless, cookbook remember ([#246](https://github.com/MystenLabs/MemWal/issues/246)), upsert profile ([#247](https://github.com/MystenLabs/MemWal/issues/247)), healthCheck ([#248](https://github.com/MystenLabs/MemWal/issues/248)).
+Build roast-bot WC 2026 + MemWal per-wallet trên Vercel **hkg1**. **Timeout message 3** do `rememberAndWait`, LLM intent, sync mỗi turn, prompt dài, stream dài. Đã chuyển sang `remember()` fire-and-forget, `loadFanProfileFast` 500ms, recall song song cap 800ms, roast 40 từ. MemWal issues: **3 Closed** ([#246](https://github.com/MystenLabs/MemWal/issues/246), [#247](https://github.com/MystenLabs/MemWal/issues/247), [#248](https://github.com/MystenLabs/MemWal/issues/248)), **1 Open** ([#277](https://github.com/MystenLabs/MemWal/issues/277) — serverless guide).

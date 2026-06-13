@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { assertWalletAuth } from "@/lib/auth/verify-wallet";
 
 export const maxDuration = 60;
+import { namespaceForWallet } from "@/lib/memory/client";
 import { loadFanProfile } from "@/lib/memory/fan-profile";
 import { computeToxicityLevel } from "@/lib/memory/toxicity";
 
@@ -33,6 +34,6 @@ export async function POST(req: Request) {
   return NextResponse.json({
     profile,
     toxicityLevel,
-    namespace: `special-one-${walletAddress.toLowerCase()}`,
+    namespace: namespaceForWallet(walletAddress),
   });
 }

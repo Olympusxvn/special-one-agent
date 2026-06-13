@@ -23,6 +23,38 @@ A World Cup 2026 roast-bot that remembers every bad take you make — per Sui wa
 
 ---
 
+## What sets our solution apart
+
+Most Walrus Memory demos show “the agent remembers something.” We built **memory as the product** — the roast is driven by **your own on-chain receipts**, not generic banter.
+
+### 1. Prediction Roast + accountability loop
+
+Fans declare a team, predict scores, and report results. Walrus stores pending and resolved predictions; wrong calls and flip-flops feed a **Toxicity Meter (1–10)** and hotter roasts. Memory is not passive storage — it **changes behavior** over time.
+
+### 2. Dual memory model (structured + semantic)
+
+We combine a structured fan profile (`FAN_PROFILE_JSON`) with semantic graveyard lines (“Prediction WRONG: …”). Chat **recalls** up to two memory hits in parallel with profile load and injects them into the stream — so the bot can say *“you said Brazil 3–0 six days ago”*, not just *“you like Brazil.”*
+
+### 3. Memory visible to judges, not hidden in logs
+
+The **Walrus Memory Ledger** sidebar shows open predictions, resolved history (PENDING / CORRECT / WRONG), favorite team, and toxicity — all tied to a connected Sui wallet. **MemWal 🟢 LIVE** + a mainnet explorer link prove writes land on Walrus.
+
+### 4. Portable + long-term memory on mainnet
+
+One wallet = one namespace (`special-one-{address}`). Refresh or return days later with the same wallet and the ledger reloads from Walrus — built for **Portable Memory** and **Long-Term Memory**, not a single-session chat toy.
+
+### 5. Full World Cup 2026 surface, not chat-only
+
+Luxury schedules (104 fixtures, national team crests, live scores via WorldCup26), **click-to-predict** modal that writes straight to Walrus Memory, press room, and media — memory is wired across the app, not only `/chat`.
+
+### 6. Production serverless, not a local demo
+
+Deployed on Vercel mainnet with parallel recall budgets (500ms profile / 800ms semantic), fire-and-forget `remember()` so streams do not timeout, and documented MemWal feedback from real latency pain — **3 Closed, 1 Open**: [#246](https://github.com/MystenLabs/MemWal/issues/246) ✓, [#247](https://github.com/MystenLabs/MemWal/issues/247) ✓, [#248](https://github.com/MystenLabs/MemWal/issues/248) ✓, [#277](https://github.com/MystenLabs/MemWal/issues/277) (Open).
+
+**Short pitch (form field):** Memory is not a bolt-on — it is the roast engine: per-wallet Walrus namespaces, prediction ledger with WRONG/CORRECT resolution, toxicity escalation, semantic recall in chat, judge-visible UI + mainnet explorer proof, and a full WC 2026 app on production Vercel.
+
+---
+
 ## Submission requirements (official → our project)
 
 Mapping from Walrus Sessions 4 requirements to what judges can verify live.
@@ -126,6 +158,19 @@ Full mitigation list: [CHANGELOG.md](./CHANGELOG.md) §9 (Lessons learned).
 
 ---
 
+## MemWal GitHub feedback (Walrus Sessions 4)
+
+| Issue | Type | Summary | Status |
+|-------|------|---------|--------|
+| [#246](https://github.com/MystenLabs/MemWal/issues/246) | Docs | Multi-tenant cookbook | **Closed** |
+| [#247](https://github.com/MystenLabs/MemWal/issues/247) | Feature | Upsert / key-based recall | **Closed** — upsert added |
+| [#248](https://github.com/MystenLabs/MemWal/issues/248) | Feature | `healthCheck()` at deploy | **Closed** — SDK review |
+| [#277](https://github.com/MystenLabs/MemWal/issues/277) | Docs | Serverless latency guide | **Open** |
+
+Form summary: [FEEDBACK.md](./FEEDBACK.md) · technical depth: [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md)
+
+---
+
 ## Memory Moment — demo script (Day 1 vs Day 4+)
 
 **Goal:** Show memory *changing behaviour* — the clearest signal judges look for.
@@ -173,7 +218,7 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 | Honest reflection | 🟡 Draft | [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) |
 | DeepSurge submission | ❌ TODO | [Campaign page](https://www.deepsurge.xyz/hackathons/cbe3390c-88c1-48c6-a86d-5c1edb4b6d17) |
 | Airtable form | ❌ TODO | [Walrus Memory Session form](https://airtable.com/appoDAKpC74UOqoDa/shrIl2BMnzMwpuLhO) |
-| MemWal GitHub issues (feedback prize) | ✅ Done | [#246](https://github.com/MystenLabs/MemWal/issues/246), [#247](https://github.com/MystenLabs/MemWal/issues/247), [#248](https://github.com/MystenLabs/MemWal/issues/248) |
+| MemWal GitHub issues (feedback prize) | ✅ Done | **3 Closed, 1 Open** — [#246](https://github.com/MystenLabs/MemWal/issues/246) ✓, [#247](https://github.com/MystenLabs/MemWal/issues/247) ✓, [#248](https://github.com/MystenLabs/MemWal/issues/248) ✓, [#277](https://github.com/MystenLabs/MemWal/issues/277) Open — [FEEDBACK.md](./FEEDBACK.md) |
 | #Walrus X post | ❌ TODO | After video + Memory Moment |
 
 ---
@@ -182,14 +227,18 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 
 | Doc | Purpose |
 |-----|---------|
-| [PROJECT.md](./PROJECT.md) | Product overview, architecture, demo script |
-| [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md) | Official SS4 rules + fit checklist |
+| [README.md](./README.md) | Project overview — live demo, quick start, issue status |
+| [PROJECT.md](./PROJECT.md) | Architecture, demo script |
 | [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md) | Mainnet MemWalAccount + delegate key setup |
+| [FEEDBACK.md](./FEEDBACK.md) | MemWal feedback summary + GitHub issue list for forms |
 | [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) | Honest latency feedback for Walrus / MemWal team |
+| [MemWal #277 — serverless latency](https://github.com/MystenLabs/MemWal/issues/277) | Production Vercel timeout lessons + cookbook ask |
+| [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md) | Official SS4 rules + fit checklist |
 | [CHANGELOG.md](./CHANGELOG.md) | Mitigations and lessons learned |
+| [LICENSE](./LICENSE) | MIT — educational & research use |
 
 ---
 
 ## Tóm tắt (VI)
 
-**Mr. Toxic Special One** — chatbot roast World Cup 2026, mỗi ví Sui có namespace Walrus `special-one-{address}`. Production: [special-one-agent.vercel.app](https://special-one-agent.vercel.app). Sidebar **Walrus Memory Ledger** hiện prediction pending + resolved (WRONG/CORRECT) cho judges. Showcase Portable + Long-Term Memory. Còn TODO: video demo, Memory Moment 4 ngày, DeepSurge/Airtable.
+**Mr. Toxic Special One** — chatbot roast World Cup 2026, mỗi ví Sui có namespace Walrus `special-one-{address}`. Production: [special-one-agent.vercel.app](https://special-one-agent.vercel.app). Sidebar **Walrus Memory Ledger** hiện prediction pending + resolved (WRONG/CORRECT) cho judges. Showcase Portable + Long-Term Memory. MemWal feedback: **3 Closed** ([#246](https://github.com/MystenLabs/MemWal/issues/246), [#247](https://github.com/MystenLabs/MemWal/issues/247), [#248](https://github.com/MystenLabs/MemWal/issues/248)), **1 Open** ([#277](https://github.com/MystenLabs/MemWal/issues/277)). License MIT — học tập & nghiên cứu. Còn TODO: video demo, Memory Moment 4 ngày, DeepSurge/Airtable.

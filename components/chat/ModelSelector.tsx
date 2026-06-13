@@ -41,7 +41,7 @@ export function ModelSelector({
           ? "Open Settings and connect Gemini, ChatGPT, or Claude"
           : undefined
       }
-      className="rounded-lg border border-press-border bg-press-card px-3 py-1.5 text-xs text-foreground focus:border-gold focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+      className="walrus-input min-h-0 rounded-pill border-border-subtle bg-transparent px-3 py-2 text-caption text-foreground focus:border-brand disabled:cursor-not-allowed disabled:opacity-50"
       aria-label="Select AI model"
     >
       {CHAT_MODELS.map((m) => {

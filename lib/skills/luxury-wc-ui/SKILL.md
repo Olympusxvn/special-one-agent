@@ -8,6 +8,9 @@ description: >-
   "make this tab luxury", "match the home design", "redesign UI", "góc bo tròn".
 ---
 
+> **Cursor (all projects):** portable copy at `~/.cursor/skills/luxury-wc-ui/`
+> (`SKILL.md` + `reference.md`). Use that skill when bootstrapping a new repo.
+
 # Luxury World Cup 2026 — UI Skill
 
 A portable design system. Every screen in this app must read as a **premium VIP
@@ -118,6 +121,12 @@ After connect, a signature verification runs automatically (see
 - DON'T gate content behind JS-only animations.
 
 ## Detach / reuse in another project
+
+**Preferred:** use the Cursor personal skill at `~/.cursor/skills/luxury-wc-ui/`
+(read `reference.md` for bootstrap checklist).
+
+Or copy manually:
+
 1. Copy `app/globals.css` luxe blocks (search `luxe-`) + the
    `@media (prefers-reduced-transparency)` fallback.
 2. Copy the Tailwind color/`fontFamily.display` extensions.

@@ -4,6 +4,11 @@
 **Stack:** Next.js 14 on Vercel (region `hkg1`) + MemWal mainnet + Sui wallet auth  
 **Audience:** Walrus Sessions organizers, MemWal SDK team, hackathon reflection forms
 
+> **Agent skills:** Implementation patterns live in [`lib/skills/`](./lib/skills/README.md)
+> (memwal-serverless, multi-tenant setup, wallet auth, prediction-roast-agent).
+> **This document** is the judge-facing deep write-up — latency evidence, trade-offs,
+> and MemWal feedback asks. Start here for honest production lessons.
+
 ---
 
 ## What we built
@@ -138,6 +143,7 @@ recalledMemories: memories.slice(0, 2).map(m => m.slice(0, 80))
 | MemWal setup | [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md) |
 | Full lessons | [CHANGELOG.md](./CHANGELOG.md) §1–11 |
 | MemWal issue #277 (serverless latency) | https://github.com/MystenLabs/MemWal/issues/277 |
+| Agent skills (implementation) | [lib/skills/README.md](./lib/skills/README.md) |
 
 ---
 

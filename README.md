@@ -191,7 +191,8 @@ Summary for forms: [FEEDBACK.md](./FEEDBACK.md) · deep technical write-up: [FIN
 | [PROJECT.md](./PROJECT.md) | Product overview, architecture, demo script |
 | [SUBMISSION.md](./SUBMISSION.md) | Hackathon submission packet + checklist |
 | [FEEDBACK.md](./FEEDBACK.md) | MemWal feedback summary (issue status synced) |
-| [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) | Serverless latency lessons for MemWal team |
+| [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) | Serverless latency lessons for MemWal team **(judges: start here)** |
+| [lib/skills/README.md](./lib/skills/README.md) | Agent skills — MemWal, auth, roast agent, UI |
 | [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md) | Mainnet MemWalAccount + delegate key setup |
 | [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md) | Official SS4 rules + fit checklist |
 | [CHANGELOG.md](./CHANGELOG.md) | Mitigations and lessons learned |

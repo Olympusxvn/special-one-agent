@@ -167,7 +167,7 @@ Full mitigation list: [CHANGELOG.md](./CHANGELOG.md) §9 (Lessons learned).
 | [#248](https://github.com/MystenLabs/MemWal/issues/248) | Feature | `healthCheck()` at deploy | **Closed** — SDK review |
 | [#277](https://github.com/MystenLabs/MemWal/issues/277) | Docs | Serverless latency guide | **Open** |
 
-Form summary: [FEEDBACK.md](./FEEDBACK.md) · technical depth: [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md)
+Form summary: [FEEDBACK.md](./FEEDBACK.md) · technical depth: [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) · skills: [lib/skills/README.md](./lib/skills/README.md)
 
 ---
 
@@ -231,7 +231,8 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 | [PROJECT.md](./PROJECT.md) | Architecture, demo script |
 | [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md) | Mainnet MemWalAccount + delegate key setup |
 | [FEEDBACK.md](./FEEDBACK.md) | MemWal feedback summary + GitHub issue list for forms |
-| [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) | Honest latency feedback for Walrus / MemWal team |
+| [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) | Honest latency feedback for Walrus / MemWal team **(judges)** |
+| [lib/skills/README.md](./lib/skills/README.md) | Agent skills index — memwal-serverless, auth, roast agent |
 | [MemWal #277 — serverless latency](https://github.com/MystenLabs/MemWal/issues/277) | Production Vercel timeout lessons + cookbook ask |
 | [WALRUS_SS4_RULE.md](./WALRUS_SS4_RULE.md) | Official SS4 rules + fit checklist |
 | [CHANGELOG.md](./CHANGELOG.md) | Mitigations and lessons learned |

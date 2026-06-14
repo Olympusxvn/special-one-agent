@@ -9,6 +9,8 @@
 
 Built for **[Walrus Sessions 4 — Walrus Memory World Cup](https://thewalrussessions.wal.app/memory-world-cup)** (June 2026).
 
+**Platform sibling:** [MemWal Agent Memory](https://github.com/Olympusxvn/memwal-agent-memory) — Sui Overflow 2026 Walrus track (hybrid memory, MCP, Move marketplace). Map: [companion doc](https://github.com/Olympusxvn/memwal-agent-memory/blob/main/docs/companion-mvp-special-one-agent.md).
+
 ---
 
 ## Overview

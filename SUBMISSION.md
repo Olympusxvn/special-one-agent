@@ -4,6 +4,8 @@
 **Track:** [Walrus Memory World Cup](https://thewalrussessions.wal.app/memory-world-cup)  
 **Deadline:** June 24, 2026
 
+**Platform sibling (Sui Overflow 2026):** [MemWal Agent Memory](https://github.com/Olympusxvn/memwal-agent-memory) — hybrid memory layer, MCP, Move marketplace. Cross-map: [companion doc](https://github.com/Olympusxvn/memwal-agent-memory/blob/main/docs/companion-mvp-special-one-agent.md).
+
 ---
 
 ## One-liner

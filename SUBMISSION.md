@@ -203,6 +203,94 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 
 ---
 
+## For Airtable
+
+Copy-paste blocks for the [Walrus Memory Session form](https://airtable.com/appoDAKpC74UOqoDa/shrIl2BMnzMwpuLhO). Form link also on [DeepSurge campaign](https://www.deepsurge.xyz/hackathons/cbe3390c-88c1-48c6-a86d-5c1edb4b6d17).
+
+### Workflow and functionalities (Option A — narrative)
+
+I connect my Sui wallet and enter the Press Room — no signup, my wallet is my identity. I declare which team I support, make bold score predictions (e.g. “Brazil 3–0 Argentina”), and sometimes flip-flop when results go wrong. Before each roast, the agent **reads my Walrus Memory**: favorite team, open and resolved predictions, past flip-flops, and semantic recall of my worst takes. It streams a short, personalized roast that references **my own receipts**, not generic trash talk. Wrong calls and bandwagon switches raise a **Toxicity Meter (1–10)** and make roasts sharper over time. Everything is visible in the **Walrus Memory Ledger** sidebar (PENDING / CORRECT / WRONG) and persists on mainnet — if I return days later with the same wallet, the agent still remembers and roasts me accordingly. I can also browse WC 2026 schedules, click-to-predict from fixtures, and sync results when matches finish.
+
+### Workflow and functionalities (bullet workflow)
+
+1. **Connect** — Sui wallet + sign message; one address = one Walrus namespace.
+2. **Declare** — favorite team, predictions, confidence level (chat or schedule modal).
+3. **Remember** — MemWal writes structured profile + semantic lines (predictions, flip-flops, roasts).
+4. **Recall** — before each roast, agent loads profile + recalled memories from Walrus.
+5. **Roast** — streaming LLM reply personalized to my history; toxicity rises on wrong calls.
+6. **Resolve** — report results or sync fixtures → CORRECT/WRONG updates ledger.
+7. **Return** — same wallet later → portable, long-term memory; behavior changes over sessions.
+
+### Feedback on using Walrus Memory (GitHub tickets)
+
+We filed the following issues on [MystenLabs/MemWal](https://github.com/MystenLabs/MemWal) while building [Mr. Toxic Special One](https://github.com/Olympusxvn/special-one-agent) (Next.js + MemWal mainnet on Vercel):
+
+| Issue | Description | Link |
+|-------|-------------|------|
+| **#246** | **Docs — Multi-tenant cookbook.** Quickstart assumes a single MemWalAccount; we needed a documented pattern for one operator account + delegate key + per-user wallet namespace. | https://github.com/MystenLabs/MemWal/issues/246 |
+| **#247** | **Feature — Upsert / key-based recall for structured state.** Storing agent profile as repeated `FAN_PROFILE_JSON:` semantic lines returns stale snapshots on recall; need deterministic upsert or key-based read. | https://github.com/MystenLabs/MemWal/issues/247 |
+| **#248** | **Feature — `healthCheck()` at deploy time.** `npm run memwal:verify` only checks env vars; no live relayer ping or delegate-permission check before users hit chat. | https://github.com/MystenLabs/MemWal/issues/248 |
+| **#277** | **Docs — Serverless latency guide (Vercel/Next.js).** Production `FUNCTION_INVOCATION_TIMEOUT` on message 3 from `rememberAndWait()` before LLM stream, sequential recall, and long streams; need cookbook for `remember` vs `rememberAndWait`, parallel recall budgets, and fire-and-forget writes. | https://github.com/MystenLabs/MemWal/issues/277 |
+
+**Status:** #246, #247, #248 — Closed (team acknowledged; upsert shipping). **#277 — Open.**
+
+**Related community issue we support (+1 comment):** [#258](https://github.com/MystenLabs/MemWal/issues/258) — no way to delete memories or clear a namespace; stale recall after dev/demo resets hurts Memory Moment reproducibility. We did not file this ourselves.
+
+**Deep technical write-up:** [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md)
+
+### Feedback (about building on Walrus)
+
+**Project:** [Mr. Toxic Special One](https://special-one-agent.vercel.app) — Prediction Roast agent for World Cup 2026; per Sui wallet Walrus namespace; mainnet MemWalAccount on [SuiScan](https://suiscan.xyz/mainnet/object/0x73b07979a6712f54283c02ddf70e2bdfb3ec729627c9ef0e0d8a214015066a99).
+
+#### What worked well
+
+- **Wallet = identity** — no signup; one Sui address maps to one isolated MemWal namespace. Strong fit for “Portable Memory” and hackathon demos.
+- **Semantic recall quality** — graveyard lines (“Prediction WRONG…”, flip-flops) recall well and power personalized roast callbacks — memory genuinely changes agent behavior.
+- **Mainnet + dashboard flow** — [memory.walrus.xyz/dashboard](https://memory.walrus.xyz/dashboard) delegate keys, mainnet relayer, and SuiScan explorer link gave judges verifiable on-chain proof (**MemWal LIVE** badge in UI).
+- **Dual memory pattern** — structured JSON profile + semantic lines worked for both fast reads and narrative callbacks.
+- **Multi-tenant operator model** — one MemWalAccount on server, users only sign with wallet; scales to a public demo without per-user MemWal setup.
+
+#### Challenges encountered
+
+- **Documentation gap — multi-tenant + serverless.** Quickstart is single-user oriented. We had to discover namespace-per-wallet, delegate-only keys, and “never `rememberAndWait()` before streaming LLM” through production pain (Vercel `hkg1`, timeout on chat message 3). See [#277](https://github.com/MystenLabs/MemWal/issues/277) and [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md).
+- **`rememberAndWait` foot-gun.** Easy to integrate correctly for correctness but fatal on serverless wall-clock budgets; error only shows up after a few chat turns.
+- **Structured state via semantic recall ([#247](https://github.com/MystenLabs/MemWal/issues/247)).** Embedding full JSON in recall hits returns stale duplicates; needed upsert/key-based pattern.
+- **Recall rate limits (429).** `restore()` on cold paths triggered relayer rate limits; we built custom retry/cache/skip-restore logic in-app.
+- **No delete / clear namespace ([#258](https://github.com/MystenLabs/MemWal/issues/258)).** Dev iterations and demo resets leave orphaned memories that still surface in recall — we rotated namespace prefixes as a workaround.
+- **Deploy verification ([#248](https://github.com/MystenLabs/MemWal/issues/248)).** Env-var checks pass while relayer/delegate misconfig only surfaces when a user chats.
+
+#### Missing features / functionality we would like
+
+- Official **serverless integration guide** (parallel recall caps, fire-and-forget writes, timeout budgets) — [#277](https://github.com/MystenLabs/MemWal/issues/277)
+- **`healthCheck()`** with live relayer + delegate verification — [#248](https://github.com/MystenLabs/MemWal/issues/248)
+- **Profile upsert / key-based recall** for structured agent state — [#247](https://github.com/MystenLabs/MemWal/issues/247) (team shipping)
+- **`clearNamespace()` / soft-delete + `list()`** for dev loops and reproducible Memory Moment demos — [#258](https://github.com/MystenLabs/MemWal/issues/258)
+- **Multi-tenant cookbook** (one account, many namespaces) — [#246](https://github.com/MystenLabs/MemWal/issues/246)
+
+#### Access / onboarding
+
+- Mainnet onboarding via dashboard was straightforward once we understood **delegate key vs owner key**.
+- No testnet token friction for our path — we went straight to mainnet for Sessions requirements.
+- We wrote our own operator guide: [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md).
+
+#### Suggestions for improving developer experience
+
+1. Ship a **“MemWal on serverless”** doc with a reference chat-route template (`Promise.all` profile + recall, capped prompt injection, async writes).
+2. Document **`remember()` vs `rememberAndWait()`** decision tree prominently in quickstart.
+3. Add **`healthCheck()`** to SDK and `memwal:verify` script.
+4. Expose **namespace list + soft-delete** when relayer support lands ([#258](https://github.com/MystenLabs/MemWal/issues/258)).
+5. Include a **multi-tenant Next.js example** (Sui wallet auth + per-wallet namespace) in official samples.
+
+#### What we would build differently
+
+Start with parallel capped recall and fire-and-forget writes on day one; never put fixture sync or `rememberAndWait` on the chat hot path; use upsert for structured profile instead of repeated JSON blobs.
+
+#### Short version (if character-limited)
+
+MemWal mainnet worked well for per-wallet portable memory and high-quality semantic recall — our roast agent genuinely changes behavior from stored predictions and flip-flops. Main challenges were docs gaps for multi-tenant + Vercel serverless (we hit `FUNCTION_INVOCATION_TIMEOUT` until we stopped awaiting MemWal before LLM stream), stale structured state via recall (#247), no deploy healthCheck (#248), recall 429s, and no namespace clear/delete (#258). We filed #246–#248 and #277 on GitHub; mitigations and honest trade-offs are in [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md). Suggestions: official serverless cookbook, remember vs rememberAndWait guide, healthCheck(), and clearNamespace/list APIs.
+
+---
+
 ## Submission checklist status
 
 | Item | Status | Notes |
@@ -219,7 +307,7 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 | Demo video (<3 min) | ❌ TODO | Script in [PROJECT.md](./PROJECT.md#demo-script-3-minutes) |
 | Honest reflection | 🟡 Draft | [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) |
 | DeepSurge submission | ❌ TODO | [Campaign page](https://www.deepsurge.xyz/hackathons/cbe3390c-88c1-48c6-a86d-5c1edb4b6d17) |
-| Airtable form | ❌ TODO | [Walrus Memory Session form](https://airtable.com/appoDAKpC74UOqoDa/shrIl2BMnzMwpuLhO) |
+| Airtable form | 🟡 Ready | Copy from [For Airtable](#for-airtable) above · [form link](https://airtable.com/appoDAKpC74UOqoDa/shrIl2BMnzMwpuLhO) |
 | MemWal GitHub issues (feedback prize) | ✅ Done | **3 Closed, 1 Open** — [#246](https://github.com/MystenLabs/MemWal/issues/246) ✓, [#247](https://github.com/MystenLabs/MemWal/issues/247) ✓, [#248](https://github.com/MystenLabs/MemWal/issues/248) ✓, [#277](https://github.com/MystenLabs/MemWal/issues/277) Open — [FEEDBACK.md](./FEEDBACK.md) |
 | #Walrus X post | ❌ TODO | After video + Memory Moment |
 
@@ -233,6 +321,7 @@ Pre-seed the demo wallet with scripted predictions over several days, or record 
 | [PROJECT.md](./PROJECT.md) | Architecture, demo script |
 | [docs/MEMWAL_SETUP.md](./docs/MEMWAL_SETUP.md) | Mainnet MemWalAccount + delegate key setup |
 | [FEEDBACK.md](./FEEDBACK.md) | MemWal feedback summary + GitHub issue list for forms |
+| **For Airtable** | [§ For Airtable](#for-airtable) — workflow, bullets, GitHub tickets, Walrus feedback |
 | [FINAL_FEEDBACK.md](./FINAL_FEEDBACK.md) | Honest latency feedback for Walrus / MemWal team **(judges)** |
 | [lib/skills/README.md](./lib/skills/README.md) | Agent skills index — memwal-serverless, auth, roast agent |
 | [MemWal #277 — serverless latency](https://github.com/MystenLabs/MemWal/issues/277) | Production Vercel timeout lessons + cookbook ask |
